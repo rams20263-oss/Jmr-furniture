@@ -1,0 +1,2590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JMR Furniture — Workshop Ledger</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .tab-active { background-color: #0f172a; color: #ffffff; }
+    .tab-inactive { color: #475569; }
+    .tab-inactive:hover { background-color: #f1f5f9; color: #0f172a; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen antialiased">
+
+  <!-- Top Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-11 h-10 rounded-xl bg-slate-900 text-white font-bold text-sm flex items-center justify-center shrink-0 tracking-tight">
+          JMR
+        </div>
+        <div class="min-w-0">
+          <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight truncate">JMR Furniture</h1>
+          <p id="header-date" class="text-xs text-slate-500 truncate"></p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="btn-export-csv" type="button" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+          Export CSV
+        </button>
+        <button id="btn-reset-demo" type="button" class="px-3 py-1.5 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition">
+          Clear Data
+        </button>
+      </div>
+    </div>
+
+    <!-- Single-line Reorderable Navigation Tabs (Hold 2s to interchange) -->
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 pb-3 space-y-2">
+      <nav id="primary-nav" class="flex items-center gap-1.5 overflow-x-auto select-none" aria-label="Primary Tabs">
+        <button type="button" data-tab="overview" class="nav-tab tab-active px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition">Overview</button>
+        <button type="button" data-tab="expenses" class="nav-tab tab-inactive px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition">Roz ke Kharche</button>
+        <button type="button" data-tab="attendance" class="nav-tab tab-inactive px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition">Attendance</button>
+        <button type="button" data-tab="sold" class="nav-tab tab-inactive px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition">Sold Maal</button>
+        <button type="button" data-tab="udhaar" class="nav-tab tab-inactive px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition">Udhaar</button>
+        <button type="button" data-tab="directory" class="nav-tab tab-inactive px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition">Address &amp; Contacts</button>
+      </nav>
+      <div id="reorder-bar" class="hidden flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1.5 rounded-lg text-xs">
+        <span id="reorder-hint">Reorder Mode: Kisi bhi 2 tabs par tap karke interchange karein (ya drag karein)</span>
+        <button id="btn-done-reorder" type="button" class="px-2.5 py-1 bg-slate-900 text-white rounded-md font-medium shrink-0">Done</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- TAB 1: OVERVIEW -->
+    <section id="view-overview" class="tab-view space-y-6">
+
+      <!-- TOP CARD: BUSINESS CASH IN HAND (Compact by default, tap arrow to expand) -->
+      <div class="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-md space-y-4">
+        <button type="button" data-toggle-acc="acc-cash" class="w-full flex items-center justify-between gap-3 text-left">
+          <div>
+            <p class="text-[11px] font-medium text-slate-300 uppercase tracking-wider">Business ke Paas Bacha (Available Cash)</p>
+            <p id="cash-available" class="text-2xl sm:text-3xl font-bold mt-0.5">₹0</p>
+          </div>
+          <span id="arrow-acc-cash" class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-300 text-xs shrink-0">▼</span>
+        </button>
+
+        <div id="acc-cash" class="hidden space-y-4 pt-3 border-t border-slate-800">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p id="cash-formula-line" class="text-xs text-slate-300"></p>
+            <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-2.5 flex items-center gap-2 shrink-0">
+              <div>
+                <label for="input-opening-cash" class="block text-[11px] text-slate-300 font-medium">Business Cash (₹)</label>
+                <input id="input-opening-cash" type="number" min="0" step="100" class="w-28 bg-slate-900 text-white text-sm font-semibold px-2.5 py-1 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-white mt-0.5" />
+              </div>
+              <button id="btn-save-cash" type="button" class="self-end px-3 py-1.5 bg-white text-slate-900 hover:bg-slate-100 text-xs font-semibold rounded-lg transition">
+                Set
+              </button>
+            </div>
+          </div>
+
+          <!-- Pat-Peet ke Bacha Strip (After Labour, Rent & Loan Monthly Due + Total) -->
+          <div class="bg-slate-800/70 border border-slate-700/80 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-center">
+            <div>
+              <p class="text-[11px] text-slate-400 uppercase font-medium">Labour (Is Mahine)</p>
+              <p id="net-labour" class="text-base font-bold text-white mt-0.5">₹0</p>
+            </div>
+            <div>
+              <label for="input-monthly-rent" class="block text-[11px] text-slate-400 uppercase font-medium">Monthly Rent (₹)</label>
+              <input id="input-monthly-rent" type="number" min="0" step="100" class="w-full max-w-[130px] bg-slate-900 text-white text-sm font-semibold px-2.5 py-1 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-white mt-0.5" />
+            </div>
+            <div>
+              <p class="text-[11px] text-slate-400 uppercase font-medium">Loan Monthly Due</p>
+              <p id="net-loan-due" class="text-base font-bold text-rose-300 mt-0.5">₹0</p>
+            </div>
+            <div class="lg:border-l lg:border-slate-700 lg:pl-3">
+              <p class="text-[11px] text-amber-300 uppercase font-medium">Total Monthly Dena</p>
+              <p id="net-total-due" class="text-base font-bold text-amber-300 mt-0.5">₹0</p>
+            </div>
+            <div class="lg:text-right">
+              <p class="text-[11px] text-slate-300 uppercase font-medium">Pat-Peet ke Bacha</p>
+              <p id="net-after-bills" class="text-xl font-bold text-emerald-400 mt-0.5">₹0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Profit Target Calculator (Compact by default, tap arrow to expand) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-3">
+        <button type="button" data-toggle-acc="acc-target" class="w-full flex items-center justify-between gap-3 text-left">
+          <div class="min-w-0">
+            <h2 class="text-sm sm:text-base font-semibold text-slate-900">Monthly Profit Target</h2>
+            <p id="target-compact-summary" class="text-xs text-slate-500 truncate mt-0.5"></p>
+          </div>
+          <span id="arrow-acc-target" class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 text-xs shrink-0">▼</span>
+        </button>
+
+        <div id="acc-target" class="hidden pt-3 border-t border-slate-100">
+          <div class="flex flex-wrap items-center gap-3">
+            <div>
+              <label for="input-target-profit" class="block text-[11px] font-medium text-slate-500">Per Partner Target (₹)</label>
+              <input id="input-target-profit" type="number" min="0" step="500" value="15000" class="w-32 px-3 py-1.5 text-sm font-semibold rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 mt-0.5" />
+            </div>
+            <div>
+              <label for="input-sofa-profit" class="block text-[11px] font-medium text-slate-500">1 Sofa Profit (₹)</label>
+              <input id="input-sofa-profit" type="number" min="1" step="100" value="2000" class="w-28 px-3 py-1.5 text-sm font-semibold rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 mt-0.5" />
+            </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-xl px-3.5 py-2">
+              <p class="text-[11px] font-medium text-blue-700 uppercase">3 Partners Profit</p>
+              <p id="target-biz-profit" class="text-lg font-bold text-blue-900">₹45,000</p>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2">
+              <p class="text-[11px] font-medium text-slate-500 uppercase">Earn Karna Padega</p>
+              <p id="target-earn-needed" class="text-lg font-bold text-slate-900">₹0</p>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2">
+              <p class="text-[11px] font-medium text-emerald-700 uppercase">Sofas Needed</p>
+              <p id="target-sofas-needed" class="text-lg font-bold text-emerald-800">0 Sofas</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming Sofa Delivery / Orders (Compact sub-headings when closed, full details when opened) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-3">
+        <button type="button" data-toggle-acc="acc-orders" class="w-full flex items-center justify-between gap-3 text-left">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm sm:text-base font-semibold text-slate-900">Sofa Orders (Pending &amp; Sold)</h2>
+              <span id="order-count-badge" class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-slate-100 text-slate-700">0 Pending</span>
+              <span id="sold-count-badge-top" class="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-100 text-emerald-800">0 Sold</span>
+            </div>
+            <div id="sofa-orders-compact" class="flex flex-wrap gap-1.5 mt-1.5"></div>
+          </div>
+          <span id="arrow-acc-orders" class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 text-xs shrink-0">▼</span>
+        </button>
+
+        <div id="acc-orders" class="hidden space-y-4 pt-3 border-t border-slate-100">
+          <form id="form-sofa-order" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+            <div>
+              <label for="order-name" class="block text-xs font-medium text-slate-600 mb-1">Sofa Name *</label>
+              <input id="order-name" type="text" required placeholder="e.g. L-Shape Sofa" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+            </div>
+            <div>
+              <label for="order-client" class="block text-xs font-medium text-slate-600 mb-1">Client / Owner</label>
+              <input id="order-client" type="text" placeholder="e.g. Nadeem Bhai" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+            </div>
+            <div>
+              <label for="order-date" class="block text-xs font-medium text-slate-600 mb-1">Delivery Date *</label>
+              <input id="order-date" type="date" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Photo</label>
+              <div class="flex items-center gap-2">
+                <img id="order-photo-preview" src="" alt="Preview" class="hidden w-9 h-9 rounded-lg object-cover border border-slate-200 shrink-0" />
+                <label for="order-photo" class="cursor-pointer flex-1 text-center px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-medium rounded-xl transition">📷 Photo</label>
+                <input id="order-photo" type="file" accept="image/*" capture="environment" class="hidden" />
+              </div>
+            </div>
+            <div>
+              <button type="submit" class="w-full px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-xl transition">
+                + Add Order
+              </button>
+            </div>
+          </form>
+
+          <div id="sofa-orders-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Hardware Total</p>
+          <p id="kpi-hardware" class="text-2xl font-bold text-slate-900 mt-1.5">₹0</p>
+          <p id="kpi-hardware-count" class="text-xs text-slate-500 mt-1">0 items logged</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Roz ke Kharche</p>
+          <p id="kpi-expenses" class="text-2xl font-bold text-slate-900 mt-1.5">₹0</p>
+          <p id="kpi-expenses-today" class="text-xs text-slate-500 mt-1">Today: ₹0</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Aaj ki Attendance</p>
+          <p id="kpi-attendance" class="text-2xl font-bold text-emerald-600 mt-1.5">0 / 0</p>
+          <p id="kpi-wages" class="text-xs text-slate-500 mt-1">Month wages: ₹0</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Monthly Loan Due</p>
+          <p id="kpi-udhaar-due" class="text-2xl font-bold text-rose-600 mt-1.5">₹0</p>
+          <p id="kpi-udhaar-net" class="text-xs text-slate-500 mt-1">Total Liya: ₹0</p>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <h2 class="text-sm font-semibold text-slate-900 mb-3">Quick Jump</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <button type="button" data-jump="expenses" class="quick-jump flex items-center justify-between px-3.5 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition">
+            <div>
+              <p class="text-xs sm:text-sm font-semibold text-slate-900">+ Hardware Saman</p>
+              <p class="text-[11px] text-slate-500">Roz ke kharche mein</p>
+            </div>
+            <span class="text-slate-400">→</span>
+          </button>
+          <button type="button" data-jump="expenses" class="quick-jump flex items-center justify-between px-3.5 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition">
+            <div>
+              <p class="text-xs sm:text-sm font-semibold text-slate-900">+ Aaj ka Kharcha</p>
+              <p class="text-[11px] text-slate-500">Chai, petrol, labour</p>
+            </div>
+            <span class="text-slate-400">→</span>
+          </button>
+          <button type="button" data-jump="attendance" class="quick-jump flex items-center justify-between px-3.5 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition">
+            <div>
+              <p class="text-xs sm:text-sm font-semibold text-slate-900">✓ Aaj ki Haajri</p>
+              <p class="text-[11px] text-slate-500">Staff mark &amp; edit</p>
+            </div>
+            <span class="text-slate-400">→</span>
+          </button>
+          <button type="button" data-jump="udhaar" class="quick-jump flex items-center justify-between px-3.5 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition">
+            <div>
+              <p class="text-xs sm:text-sm font-semibold text-slate-900">Udhaar</p>
+              <p class="text-[11px] text-slate-500">Loan &amp; EMI</p>
+            </div>
+            <span class="text-slate-400">→</span>
+          </button>
+          <button type="button" data-jump="directory" class="quick-jump flex items-center justify-between px-3.5 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition">
+            <div>
+              <p class="text-xs sm:text-sm font-semibold text-slate-900">Contacts</p>
+              <p class="text-[11px] text-slate-500">Clients &amp; shops</p>
+            </div>
+            <span class="text-slate-400">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <h2 class="text-sm font-semibold text-slate-900 mb-3">Recent Entries</h2>
+        <div id="recent-feed" class="divide-y divide-slate-100 text-sm"></div>
+      </div>
+    </section>
+
+    <!-- TAB 3: ROZ KE KHARCHE -->
+    <section id="view-expenses" class="tab-view hidden space-y-6">
+      <!-- Yellow Ruled Notepad: Aaj / Kal ka Work -->
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 pb-2.5">
+          <div>
+            <h2 class="text-sm sm:text-base font-semibold text-amber-950">Work Notepad (Aaj / Kal ka Kaam)</h2>
+            <p class="text-[11px] text-amber-800">Kaam likh kar + dabayein • Tick karte hi kaam erase ho jayega</p>
+          </div>
+          <span id="work-count-badge" class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-200/70 text-amber-900">0 pending</span>
+        </div>
+
+        <form id="form-work-note" class="flex flex-wrap sm:flex-nowrap items-center gap-2">
+          <select id="work-day" class="px-2.5 py-2 text-xs font-semibold rounded-xl border border-amber-300 bg-amber-100/70 text-amber-950 focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <option value="Aaj">Aaj</option>
+            <option value="Kal">Kal</option>
+            <option value="Custom">Date</option>
+          </select>
+          <input id="work-date" type="date" required class="px-2.5 py-2 text-xs font-medium rounded-xl border border-amber-300 bg-white/90 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          <input id="work-text" type="text" required placeholder="Naya kaam likhein (e.g. Ply order dena hai, Sofa dispatch)..." class="flex-1 min-w-[180px] px-3 py-2 text-sm rounded-xl border border-amber-300 bg-white/90 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          <button type="submit" class="px-4 py-2 bg-amber-900 hover:bg-amber-950 text-white text-xs sm:text-sm font-semibold rounded-xl transition shrink-0">
+            + Add
+          </button>
+        </form>
+
+        <div id="work-notes-list" class="divide-y divide-amber-200/80 border-t border-amber-200/80"></div>
+      </div>
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-3">
+        <button type="button" data-toggle-acc="acc-add-exp" class="w-full flex items-center justify-between gap-3 text-left">
+          <div>
+            <h2 class="text-sm sm:text-base font-semibold text-slate-900">Roz ka Kharcha Daalein</h2>
+            <p class="text-xs text-slate-500">Naya kharcha likhne ke liye open karein</p>
+          </div>
+          <span id="arrow-acc-add-exp" class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 text-xs shrink-0">▼</span>
+        </button>
+
+        <div id="acc-add-exp" class="hidden pt-3 border-t border-slate-100 space-y-3">
+          <div class="flex justify-end">
+            <button id="btn-manage-cats" type="button" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+              + Add / Edit Categories
+            </button>
+          </div>
+          <form id="form-expense" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div>
+            <label for="exp-date" class="block text-xs font-medium text-slate-600 mb-1">Date</label>
+            <input id="exp-date" type="date" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label for="exp-category" class="block text-xs font-medium text-slate-600 mb-1">Category</label>
+            <select id="exp-category" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"></select>
+          </div>
+          <div>
+            <label for="exp-desc" class="block text-xs font-medium text-slate-600 mb-1">Details *</label>
+            <input id="exp-desc" type="text" required placeholder="e.g. Chai, Petrol, Hardware repair" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label for="exp-amount" class="block text-xs font-medium text-slate-600 mb-1">Amount (₹) *</label>
+            <input id="exp-amount" type="number" step="1" min="1" required placeholder="150" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div class="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+            <div class="flex items-center gap-4 text-sm">
+              <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                <input type="radio" name="exp-mode" value="Cash" checked class="accent-slate-900" />
+                <span>Cash</span>
+              </label>
+              <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                <input type="radio" name="exp-mode" value="UPI" class="accent-slate-900" />
+                <span>UPI</span>
+              </label>
+            </div>
+            <button type="submit" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-xl transition">
+              + Add Expense
+            </button>
+          </div>
+        </form>
+        </div>
+      </div>
+
+      <!-- Expense Register (Minimized by default) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-3">
+        <button type="button" data-toggle-acc="acc-exp-reg" class="w-full flex items-center justify-between gap-3 text-left">
+          <div>
+            <h3 class="text-sm sm:text-base font-semibold text-slate-900">Expense Register</h3>
+            <p id="exp-summary-line" class="text-xs text-slate-500">Total: ₹0</p>
+          </div>
+          <span id="arrow-acc-exp-reg" class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 text-xs shrink-0">▼</span>
+        </button>
+
+        <div id="acc-exp-reg" class="hidden pt-3 border-t border-slate-100 space-y-3">
+          <div class="flex justify-end">
+            <select id="exp-filter-cat" class="w-full sm:w-52 px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"></select>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="border-b border-slate-200 text-xs text-slate-500 uppercase">
+                  <th class="py-2.5 pr-3 font-medium">Date</th>
+                  <th class="py-2.5 pr-3 font-medium">Category</th>
+                  <th class="py-2.5 pr-3 font-medium">Details</th>
+                  <th class="py-2.5 pr-3 font-medium">Mode</th>
+                  <th class="py-2.5 pr-3 font-medium">Amount</th>
+                  <th class="py-2.5 text-right font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody id="exp-table-body" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hardware Saman & Register (Minimized under Roz ke Kharche) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-3">
+        <button type="button" data-toggle-acc="acc-hardware" class="w-full flex items-center justify-between gap-3 text-left">
+          <div>
+            <h3 class="text-sm sm:text-base font-semibold text-slate-900">Hardware ka Saman &amp; Register</h3>
+            <p id="hw-acc-summary" class="text-xs text-slate-500">Saman likhne aur parchi photo ke liye open karein</p>
+          </div>
+          <span id="arrow-acc-hardware" class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 text-xs shrink-0">▼</span>
+        </button>
+
+        <div id="acc-hardware" class="hidden pt-3 border-t border-slate-100 space-y-6">
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <h2 class="text-base font-semibold text-slate-900 mb-4">Hardware ka Saman Likhein</h2>
+        <form id="form-hardware" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="sm:col-span-2">
+            <label for="hw-item" class="block text-xs font-medium text-slate-600 mb-1">Item Name *</label>
+            <input id="hw-item" type="text" required placeholder="e.g. 19mm Plywood, Staples, 40D Foam" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label for="hw-qty" class="block text-xs font-medium text-slate-600 mb-1">Quantity *</label>
+            <input id="hw-qty" type="number" step="0.01" min="0.01" required placeholder="10" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label for="hw-unit" class="block text-xs font-medium text-slate-600 mb-1">Unit</label>
+            <select id="hw-unit" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900">
+              <option value="Pcs">Pcs</option>
+              <option value="Sheet">Sheet</option>
+              <option value="Box">Box</option>
+              <option value="Kg">Kg</option>
+              <option value="Meter">Meter</option>
+              <option value="Roll">Roll</option>
+              <option value="Set">Set</option>
+            </select>
+          </div>
+          <div>
+            <label for="hw-rate" class="block text-xs font-medium text-slate-600 mb-1">Rate per Unit (₹) *</label>
+            <input id="hw-rate" type="number" step="0.01" min="0" required placeholder="850" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label for="hw-supplier" class="block text-xs font-medium text-slate-600 mb-1">Dukaan / Shopkeeper</label>
+            <input id="hw-supplier" type="text" list="shopkeeper-suggestions" placeholder="e.g. Indore Ply House" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+            <datalist id="shopkeeper-suggestions"></datalist>
+          </div>
+          <div>
+            <label for="hw-date" class="block text-xs font-medium text-slate-600 mb-1">Date</label>
+            <input id="hw-date" type="date" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+
+          <!-- Prominent Bill / Parchi Photo Upload -->
+          <div class="sm:col-span-2 lg:col-span-4 bg-slate-50 border border-dashed border-slate-300 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <img id="hw-photo-preview" src="" alt="Preview" class="hidden w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0" />
+              <div class="min-w-0">
+                <p class="text-xs font-semibold text-slate-800">Bill / Parchi Photo (Haathon-haath Camera se)</p>
+                <p id="hw-photo-status" class="text-xs text-slate-500">Saman lete hi bill ki photo click ya select karein</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <label for="hw-photo" class="cursor-pointer px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 text-xs font-medium rounded-lg transition">
+                📷 Photo Daalein
+              </label>
+              <input id="hw-photo" type="file" accept="image/*" capture="environment" class="hidden" />
+              <button id="hw-photo-clear" type="button" class="hidden px-2.5 py-2 text-xs text-rose-600 hover:bg-rose-50 rounded-lg">Remove</button>
+            </div>
+          </div>
+
+          <div class="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+            <p class="text-sm text-slate-600">Total Amount: <span id="hw-live-total" class="font-bold text-slate-900">₹0</span></p>
+            <button type="submit" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-xl transition">
+              + Add Hardware
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Hardware List -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-semibold text-slate-900">Hardware Register</h3>
+            <p id="hw-summary-line" class="text-xs text-slate-500">Total: ₹0</p>
+          </div>
+          <input id="hw-search" type="search" placeholder="Search item or shopkeeper..." class="w-full sm:w-64 px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="border-b border-slate-200 text-xs text-slate-500 uppercase">
+                <th class="py-2.5 pr-3 font-medium">Date</th>
+                <th class="py-2.5 pr-3 font-medium">Item</th>
+                <th class="py-2.5 pr-3 font-medium">Qty</th>
+                <th class="py-2.5 pr-3 font-medium">Rate</th>
+                <th class="py-2.5 pr-3 font-medium">Total</th>
+                <th class="py-2.5 pr-3 font-medium">Parchi</th>
+                <th class="py-2.5 text-right font-medium">Action</th>
+              </tr>
+            </thead>
+            <tbody id="hw-table-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+      <input id="hw-row-photo-input" type="file" accept="image/*" capture="environment" class="hidden" />
+
+        </div>
+      </div>
+
+      <!-- Monthly Category-Wise Breakdown -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-semibold text-slate-900">Is Mahine ka Category-wise Kharcha</h3>
+            <p class="text-xs text-slate-500">Dekhein kis cheez (Chai, Petrol, Labour, etc.) par is mahine kitna kharch hua</p>
+          </div>
+          <input id="exp-month-picker" type="month" class="px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div id="exp-cat-breakdown" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: ATTENDANCE -->
+    <section id="view-attendance" class="tab-view hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">Daily Attendance (Haajri)</h2>
+            <p class="text-xs text-slate-500">Tap P (Present), H (Half Day), or A (Absent) • Edit or Delete any staff</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="att-date" type="date" class="px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+            <button id="btn-open-add-staff" type="button" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-medium rounded-xl transition whitespace-nowrap">
+              + Add Staff
+            </button>
+          </div>
+        </div>
+
+        <div id="att-daily-list" class="divide-y divide-slate-100"></div>
+      </div>
+
+      <!-- Monthly Attendance & Wages Summary -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-semibold text-slate-900">Monthly Summary &amp; Wages</h3>
+            <p id="att-month-label" class="text-xs text-slate-500"></p>
+          </div>
+          <p id="att-total-wages" class="text-sm font-bold text-slate-900">Total Payable: ₹0</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="border-b border-slate-200 text-xs text-slate-500 uppercase">
+                <th class="py-2.5 pr-3 font-medium">Name</th>
+                <th class="py-2.5 pr-3 font-medium">Role</th>
+                <th class="py-2.5 pr-3 font-medium">Rate/Day</th>
+                <th class="py-2.5 pr-3 font-medium">P</th>
+                <th class="py-2.5 pr-3 font-medium">H</th>
+                <th class="py-2.5 pr-3 font-medium">A</th>
+                <th class="py-2.5 pr-3 font-medium">Total Payable</th>
+                <th class="py-2.5 text-right font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="att-summary-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: SOLD MAAL -->
+    <section id="view-sold" class="tab-view hidden space-y-6">
+      <!-- Sofa Banaya & Profit Split (4 Sections: Laagat, Back to Business, Udhaar, Jatin/Ram/Mohit) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-semibold text-slate-900">Beche Hue Sofas (Sold) &amp; Profit Split</h2>
+            <p class="text-xs text-slate-500">Kitne sofa beche, kitne mein bane, kitna fayda hua aur photo ke saath record</p>
+          </div>
+          <span id="sofa-count-badge" class="self-start sm:self-auto px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700">0 Sofas Saved</span>
+        </div>
+
+        <form id="form-sofa" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div>
+            <label for="sofa-name" class="block text-xs font-medium text-slate-600 mb-1">Sofa / Model *</label>
+            <input id="sofa-name" type="text" required placeholder="e.g. 3+1+1 Sofa" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label for="sofa-sell" class="block text-xs font-medium text-slate-600 mb-1">Bika (Selling ₹) *</label>
+            <input id="sofa-sell" type="number" min="0" required value="8000" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label for="sofa-cost" class="block text-xs font-medium text-slate-600 mb-1">Laagat (Cost ₹) *</label>
+            <input id="sofa-cost" type="number" min="0" required value="6000" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label for="sofa-biz-pct" class="block text-xs font-medium text-slate-600 mb-1">Back to Business %</label>
+            <input id="sofa-biz-pct" type="number" min="0" max="100" step="1" value="15" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label for="sofa-udhaar-pct" class="block text-xs font-medium text-slate-600 mb-1">Udhaar / Karz %</label>
+            <input id="sofa-udhaar-pct" type="number" min="0" max="100" step="1" value="25" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+
+          <!-- Live 4-Section Breakdown Cards -->
+          <div class="sm:col-span-2 lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <p class="text-[11px] font-semibold text-slate-500 uppercase">1. Laagat (Cost)</p>
+              <p id="prev-laagat" class="text-lg font-bold text-slate-900 mt-1">₹6,000</p>
+              <p id="prev-profit" class="text-xs text-emerald-700 font-medium mt-0.5">Net Profit: ₹2,000</p>
+            </div>
+            <div class="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200">
+              <p class="text-[11px] font-semibold text-blue-700 uppercase">2. Back to Business (<span id="lbl-biz-pct">15</span>%)</p>
+              <p id="prev-biz" class="text-lg font-bold text-blue-900 mt-1">₹300</p>
+              <p class="text-xs text-blue-700 mt-0.5">Business reserve</p>
+            </div>
+            <div class="p-3.5 rounded-xl bg-rose-50/70 border border-rose-200">
+              <p class="text-[11px] font-semibold text-rose-700 uppercase">3. Udhaar / Karz (<span id="lbl-udhaar-pct">25</span>%)</p>
+              <p id="prev-udhaar" class="text-lg font-bold text-rose-900 mt-1">₹500</p>
+              <p class="text-xs text-rose-700 mt-0.5">Karz chukane ke liye</p>
+            </div>
+            <div class="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200">
+              <p class="text-[11px] font-semibold text-emerald-700 uppercase">4. Partners (<span id="lbl-part-pct">60</span>%)</p>
+              <p id="prev-partners-total" class="text-lg font-bold text-emerald-900 mt-1">₹1,200</p>
+              <p id="prev-each-partner" class="text-xs text-emerald-800 font-medium mt-0.5">Jatin ₹400 • Ram ₹400 • Mohit ₹400</p>
+            </div>
+          </div>
+
+          <div class="sm:col-span-2 lg:col-span-5 flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+            <div class="flex items-center gap-2">
+              <label for="sofa-date" class="text-xs font-medium text-slate-600">Date:</label>
+              <input id="sofa-date" type="date" required class="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+            </div>
+            <button type="submit" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-xl transition">
+              + Save Sofa Entry
+            </button>
+          </div>
+        </form>
+
+        <!-- Saved Sofas & Cumulative Split -->
+        <div class="overflow-x-auto pt-2 border-t border-slate-100">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="border-b border-slate-200 text-xs text-slate-500 uppercase">
+                <th class="py-2 pr-3 font-medium">Photo</th>
+                <th class="py-2 pr-3 font-medium">Date</th>
+                <th class="py-2 pr-3 font-medium">Sofa / Client</th>
+                <th class="py-2 pr-3 font-medium">Bika</th>
+                <th class="py-2 pr-3 font-medium">Laagat</th>
+                <th class="py-2 pr-3 font-medium">Fayda</th>
+                <th class="py-2 pr-3 font-medium">Biz / Udhaar</th>
+                <th class="py-2 pr-3 font-medium">Jatin / Ram / Mohit (Each)</th>
+                <th class="py-2 text-right font-medium">Action</th>
+              </tr>
+            </thead>
+            <tbody id="sofa-table-body" class="divide-y divide-slate-100"></tbody>
+            <tfoot id="sofa-table-foot" class="border-t-2 border-slate-200 bg-slate-50 font-semibold text-slate-900"></tfoot>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- TAB 5: UDHAAR (LOAN, GIVEN, TAKEN, MONTHS EMI & INTEREST) -->
+    <section id="view-udhaar" class="tab-view hidden space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Liya / Loan (Dena Hai)</p>
+          <p id="ud-total-taken" class="text-2xl font-bold text-slate-900 mt-1.5">₹0</p>
+          <p class="text-xs text-slate-500 mt-1">Business cash mein add hota hai</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Diya (Lena Hai)</p>
+          <p id="ud-total-given" class="text-2xl font-bold text-emerald-600 mt-1.5">₹0</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Monthly Dena Hi Hai (EMI + Interest)</p>
+          <p id="ud-monthly-due" class="text-2xl font-bold text-rose-600 mt-1.5">₹0</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <h2 class="text-base font-semibold text-slate-900 mb-4">Udhaar / Loan Entry Likhein</h2>
+        <form id="form-udhaar" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+          <div>
+            <label for="ud-type" class="block text-xs font-medium text-slate-600 mb-1">Type *</label>
+            <select id="ud-type" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900">
+              <option value="taken">Liya / Loan (Dena Hai)</option>
+              <option value="given">Diya (Lena Hai)</option>
+            </select>
+          </div>
+          <div>
+            <label for="ud-party" class="block text-xs font-medium text-slate-600 mb-1">Kisse / Kisko (Name) *</label>
+            <input id="ud-party" type="text" list="ud-party-suggestions" required placeholder="e.g. Suresh / Client / Bank" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+            <datalist id="ud-party-suggestions"></datalist>
+          </div>
+          <div>
+            <label for="ud-amount" class="block text-xs font-medium text-slate-600 mb-1">Amount (₹) *</label>
+            <input id="ud-amount" type="number" min="1" required placeholder="10000" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label for="ud-months" class="block text-xs font-medium text-slate-600 mb-1">Months (Divide)</label>
+            <input id="ud-months" type="number" min="0" step="1" placeholder="e.g. 4" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label for="ud-pct" class="block text-xs font-medium text-slate-600 mb-1">Monthly Int. %</label>
+            <input id="ud-pct" type="number" min="0" step="0.1" value="0" placeholder="0 or 2" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div>
+            <label for="ud-date" class="block text-xs font-medium text-slate-600 mb-1">Date</label>
+            <input id="ud-date" type="date" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          </div>
+          <div class="sm:col-span-2 lg:col-span-6 flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+            <p class="text-sm text-slate-600">Monthly Bharna Hai: <span id="ud-live-due" class="font-bold text-rose-600">₹0</span> <span class="text-xs text-slate-400">(Principal / Months + Interest)</span></p>
+            <button type="submit" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-xl transition">
+              + Add Udhaar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-semibold text-slate-900">Udhaar &amp; Loan Register</h3>
+            <p class="text-xs text-slate-500">Kisko diya / kisse liya — naam ke hisab se filter karein</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <input id="ud-search-name" type="search" placeholder="Search name..." class="w-full sm:w-44 px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+            <select id="ud-filter" class="w-full sm:w-44 px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900">
+              <option value="ALL">All Entries</option>
+              <option value="taken">Liya / Loan (Dena Hai)</option>
+              <option value="given">Diya (Lena Hai)</option>
+            </select>
+          </div>
+        </div>
+        <div id="ud-name-pills" class="flex flex-wrap gap-1.5"></div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="border-b border-slate-200 text-xs text-slate-500 uppercase">
+                <th class="py-2.5 pr-3 font-medium">Type</th>
+                <th class="py-2.5 pr-3 font-medium">Party</th>
+                <th class="py-2.5 pr-3 font-medium">Total</th>
+                <th class="py-2.5 pr-3 font-medium">Paid</th>
+                <th class="py-2.5 pr-3 font-medium">Baki</th>
+                <th class="py-2.5 pr-3 font-medium">Term / %</th>
+                <th class="py-2.5 pr-3 font-medium">Monthly Due</th>
+                <th class="py-2.5 text-right font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ud-table-body" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: ADDRESS & CONTACTS (CLIENTS & SHOPKEEPERS) -->
+    <section id="view-directory" class="tab-view hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex items-start justify-between gap-3">
+          <div class="space-y-1">
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Mera Workshop Address</p>
+            <h2 id="my-biz-name" class="text-base font-bold text-slate-900"></h2>
+            <p id="my-biz-address" class="text-sm text-slate-700"></p>
+            <p id="my-biz-contact" class="text-xs text-slate-500"></p>
+            <a id="my-biz-map-link" href="#" target="_blank" rel="noopener noreferrer" class="hidden inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline pt-0.5">📍 Open Google Location</a>
+          </div>
+          <button id="btn-edit-my-address" type="button" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition shrink-0">
+            Edit Address
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h3 class="text-base font-semibold text-slate-900">Clients (Sofa Buyers)</h3>
+              <p class="text-xs text-slate-500">Jinko hum sofe dete hain</p>
+            </div>
+            <button type="button" data-open-contact="client" class="btn-add-contact px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-lg transition">
+              + Add Client
+            </button>
+          </div>
+          <input id="search-clients" type="search" placeholder="Search client or city..." class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          <div id="list-clients" class="divide-y divide-slate-100"></div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h3 class="text-base font-semibold text-slate-900">Shopkeepers (Suppliers)</h3>
+              <p class="text-xs text-slate-500">Jinse hum saman lete hain</p>
+            </div>
+            <button type="button" data-open-contact="shopkeeper" class="btn-add-contact px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-lg transition">
+              + Add Shopkeeper
+            </button>
+          </div>
+          <input id="search-shopkeepers" type="search" placeholder="Search shopkeeper or item..." class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+          <div id="list-shopkeepers" class="divide-y divide-slate-100"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Add / Edit Staff Modal -->
+  <div id="modal-staff" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="modal-staff-title" class="text-base font-semibold text-slate-900">Add Team Member</h3>
+        <button id="btn-close-staff" type="button" class="text-slate-400 hover:text-slate-700 text-xl leading-none">&times;</button>
+      </div>
+      <form id="form-staff" class="space-y-3">
+        <input id="staff-edit-id" type="hidden" value="" />
+        <div>
+          <label for="staff-name" class="block text-xs font-medium text-slate-600 mb-1">Name *</label>
+          <input id="staff-name" type="text" required placeholder="e.g. Ramesh" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div>
+          <label for="staff-role" class="block text-xs font-medium text-slate-600 mb-1">Role</label>
+          <input id="staff-role" type="text" placeholder="e.g. Frame Karigar / Helper" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div>
+          <label for="staff-rate" class="block text-xs font-medium text-slate-600 mb-1">Daily Wage (₹) *</label>
+          <input id="staff-rate" type="number" min="0" required placeholder="600" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="btn-cancel-staff" type="button" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-sm font-medium bg-slate-900 hover:bg-slate-800 text-white rounded-xl">Save Staff</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Udhaar Payment Modal -->
+  <div id="modal-udhaar-pay" class="fixed inset-0 z-50 hidden bg-slate-900/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="ud-pay-title" class="text-base font-semibold text-slate-900">Record Payment</h3>
+        <button id="btn-close-ud-pay" type="button" class="text-slate-400 hover:text-slate-700 text-xl leading-none">&times;</button>
+      </div>
+      <form id="form-udhaar-pay" class="space-y-3">
+        <input id="ud-pay-id" type="hidden" value="" />
+        <div>
+          <label for="ud-pay-amt" class="block text-xs font-medium text-slate-600 mb-1">Amount Paid / Received (₹) *</label>
+          <input id="ud-pay-amt" type="number" min="1" required placeholder="2000" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="btn-cancel-ud-pay" type="button" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-sm font-medium bg-slate-900 hover:bg-slate-800 text-white rounded-xl">Save Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Manage Expense Categories Modal -->
+  <div id="modal-categories" class="fixed inset-0 z-50 hidden bg-slate-900/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold text-slate-900">Expense Categories (Add / Edit)</h3>
+        <button id="btn-close-cats" type="button" class="text-slate-400 hover:text-slate-700 text-xl leading-none">&times;</button>
+      </div>
+      <form id="form-add-cat" class="flex gap-2">
+        <input id="new-cat-name" type="text" required placeholder="e.g. Hardware Repair, Tea" class="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-xl">Add</button>
+      </form>
+      <div id="cat-manager-list" class="max-h-64 overflow-y-auto divide-y divide-slate-100"></div>
+    </div>
+  </div>
+
+  <!-- Add / Edit Contact (Client or Shopkeeper) Modal -->
+  <div id="modal-contact" class="fixed inset-0 z-50 hidden bg-slate-900/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="modal-contact-title" class="text-base font-semibold text-slate-900">Add Contact</h3>
+        <button id="btn-close-contact" type="button" class="text-slate-400 hover:text-slate-700 text-xl leading-none">&times;</button>
+      </div>
+      <form id="form-contact" class="space-y-3">
+        <input id="contact-edit-id" type="hidden" value="" />
+        <input id="contact-type" type="hidden" value="client" />
+        <div>
+          <label for="contact-name" class="block text-xs font-medium text-slate-600 mb-1">Person / Firm Name *</label>
+          <input id="contact-name" type="text" required placeholder="e.g. Sharma Furniture Mart" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div>
+          <label for="contact-phone" class="block text-xs font-medium text-slate-600 mb-1">Phone Number</label>
+          <input id="contact-phone" type="tel" placeholder="e.g. 9826012345" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div>
+          <label for="contact-address" class="block text-xs font-medium text-slate-600 mb-1">Address / City</label>
+          <input id="contact-address" type="text" placeholder="e.g. Vijay Nagar, Indore" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div>
+          <label for="contact-map" class="block text-xs font-medium text-slate-600 mb-1">Google Location Link (Optional)</label>
+          <input id="contact-map" type="url" placeholder="https://maps.google.com/..." class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div>
+          <label for="contact-notes" class="block text-xs font-medium text-slate-600 mb-1">Saman / Notes</label>
+          <input id="contact-notes" type="text" placeholder="e.g. 50-50 freight / Plywood & Hardware" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div class="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-2.5 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <img id="contact-photo-preview" src="" alt="Preview" class="hidden w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0" />
+            <span id="contact-photo-status" class="text-xs text-slate-500 truncate">Photo / Visiting Card (Optional)</span>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <label for="contact-photo" class="cursor-pointer px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 text-xs font-medium rounded-lg">📷 Photo</label>
+            <input id="contact-photo" type="file" accept="image/*" capture="environment" class="hidden" />
+            <button id="contact-photo-clear" type="button" class="hidden px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg">✕</button>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="btn-cancel-contact" type="button" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-sm font-medium bg-slate-900 hover:bg-slate-800 text-white rounded-xl">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit My Address Modal -->
+  <div id="modal-my-address" class="fixed inset-0 z-50 hidden bg-slate-900/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-semibold text-slate-900">Edit Workshop Address</h3>
+        <button id="btn-close-my-addr" type="button" class="text-slate-400 hover:text-slate-700 text-xl leading-none">&times;</button>
+      </div>
+      <form id="form-my-address" class="space-y-3">
+        <div>
+          <label for="my-addr-name" class="block text-xs font-medium text-slate-600 mb-1">Business Name</label>
+          <input id="my-addr-name" type="text" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div>
+          <label for="my-addr-line" class="block text-xs font-medium text-slate-600 mb-1">Full Address</label>
+          <input id="my-addr-line" type="text" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div>
+          <label for="my-addr-contact" class="block text-xs font-medium text-slate-600 mb-1">Phone &amp; Email</label>
+          <input id="my-addr-contact" type="text" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div>
+          <label for="my-addr-map" class="block text-xs font-medium text-slate-600 mb-1">Google Location Link (Maps URL)</label>
+          <input id="my-addr-map" type="url" placeholder="https://maps.google.com/..." class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="btn-cancel-my-addr" type="button" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-sm font-medium bg-slate-900 hover:bg-slate-800 text-white rounded-xl">Save Address</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Mark Pending Sofa as Sold Modal -->
+  <div id="modal-mark-sold" class="fixed inset-0 z-50 hidden bg-slate-900/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="sold-modal-title" class="text-base font-semibold text-slate-900">Sofa Bik Gaya (Mark Sold)</h3>
+        <button id="btn-close-sold" type="button" class="text-slate-400 hover:text-slate-700 text-xl leading-none">&times;</button>
+      </div>
+      <form id="form-mark-sold" class="space-y-3">
+        <input id="sold-order-id" type="hidden" value="" />
+        <div>
+          <label for="sold-cost" class="block text-xs font-medium text-slate-600 mb-1">Kitne mein Bana (Laagat ₹) *</label>
+          <input id="sold-cost" type="number" min="0" required placeholder="6000" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div>
+          <label for="sold-sell" class="block text-xs font-medium text-slate-600 mb-1">Kitne mein Gaya (Selling ₹) *</label>
+          <input id="sold-sell" type="number" min="0" required placeholder="8000" class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div>
+          <label for="sold-date" class="block text-xs font-medium text-slate-600 mb-1">Sale Date</label>
+          <input id="sold-date" type="date" required class="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="btn-cancel-sold" type="button" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
+          <button type="submit" class="px-4 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">Save as Sold ✓</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Photo Preview Modal -->
+  <div id="modal-photo" class="fixed inset-0 z-50 hidden bg-slate-900/70 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-4 shadow-xl space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 id="modal-photo-title" class="text-sm font-semibold text-slate-900">Bill / Parchi</h3>
+        <button id="btn-close-photo" type="button" class="text-slate-400 hover:text-slate-700 text-xl leading-none">&times;</button>
+      </div>
+      <img id="modal-photo-img" src="" alt="Bill Parchi" class="max-w-full h-auto max-h-[70vh] mx-auto rounded-xl object-contain" />
+    </div>
+  </div>
+
+  <!-- Confirm Clear Modal -->
+  <div id="modal-confirm" class="fixed inset-0 z-50 hidden bg-slate-900/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+      <h3 class="text-base font-semibold text-slate-900">Clear All Workshop Data?</h3>
+      <p class="text-sm text-slate-600">Isse aapke saare hardware, kharche, sofa, udhaar aur attendance records clear ho jayenge.</p>
+      <div class="flex justify-end gap-2">
+        <button id="btn-cancel-clear" type="button" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
+        <button id="btn-confirm-clear" type="button" class="px-4 py-2 text-sm font-medium bg-rose-600 hover:bg-rose-700 text-white rounded-xl">Yes, Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg"></div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = 'gm_workshop_v4';
+      const todayISO = () => {
+        const d = new Date();
+        const off = d.getTimezoneOffset();
+        return new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
+      };
+
+      const defaultCategories = ['Chai-Nashta', 'Petrol / Transport', 'Labour', 'Bijli / Rent', 'Maintenance', 'Other'];
+      const TAB_META = {
+        overview: 'Overview',
+        expenses: 'Roz ke Kharche',
+        attendance: 'Attendance',
+        sold: 'Sold Maal',
+        udhaar: 'Udhaar',
+        directory: 'Address & Contacts'
+      };
+      const defaultTabOrder = ['overview', 'expenses', 'attendance', 'sold', 'udhaar', 'directory'];
+
+      const defaultState = () => {
+        const t = todayISO();
+        return {
+          tabOrder: [...defaultTabOrder],
+          openingCash: 5000,
+          monthlyRent: 0,
+          targetProfit: 15000,
+          sofaUnitProfit: 2000,
+          sofaOrders: [
+            { id: 'ord1', name: 'L-Shape Sofa', client: 'Nadeem Bhai', date: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10), photo: '' }
+          ],
+          sofas: [
+            { id: 'sf1', date: t, name: '3+1+1 Sofa (Sample)', sell: 8000, cost: 6000, bizPct: 15, udhaarPct: 25 }
+          ],
+          hardware: [
+            { id: 'hw1', date: t, item: '19mm Commercial Plywood', qty: 6, unit: 'Sheet', rate: 1450, supplier: 'Indore Timber', photo: '' },
+            { id: 'hw2', date: t, item: '8016 Pneumatic Staples', qty: 4, unit: 'Box', rate: 220, supplier: 'Malviya Hardware', photo: '' }
+          ],
+          workNotes: [
+            { id: 'wn1', day: 'Aaj', text: 'Plywood aur staples ka stock check karna hai' },
+            { id: 'wn2', day: 'Kal', text: 'Dealer ko sofa photo bhejna hai' }
+          ],
+          categories: [...defaultCategories],
+          expenses: [
+            { id: 'ex1', date: t, category: 'Chai-Nashta', desc: 'Workshop chai & nashta', amount: 120, mode: 'Cash' },
+            { id: 'ex2', date: t, category: 'Petrol / Transport', desc: 'Auto ply delivery', amount: 250, mode: 'UPI' }
+          ],
+          staff: [
+            { id: 'st1', name: 'Ram Sharma', role: 'Owner / Supervision', rate: 0 },
+            { id: 'st2', name: 'Karigar 1', role: 'Frame & Carpentry', rate: 700 },
+            { id: 'st3', name: 'Karigar 2', role: 'Foam & Upholstery', rate: 650 },
+            { id: 'st4', name: 'Helper 1', role: 'Cutting & Finishing', rate: 450 }
+          ],
+          attendance: {
+            [t]: { st1: 'P', st2: 'P', st3: 'P', st4: 'P' }
+          },
+          udhaar: [
+            { id: 'ud1', type: 'taken', party: 'Workshop Loan (Sample)', amount: 10000, paid: 0, months: 4, pct: 0, date: t }
+          ],
+          myBusiness: {
+            name: 'JMR Furniture',
+            address: '53 Malviya Nagar, Indore, Madhya Pradesh',
+            contact: '+91 96301 17643 | +91 87700 52692 | jmrfurnitureindore@gmail.com'
+          },
+          contacts: [
+            { id: 'ct1', type: 'client', name: 'Sample Sofa Dealer', phone: '9826000000', address: 'Ujjain Road, Indore', notes: 'Wholesale ₹14,500 (50-50 freight)' },
+            { id: 'ct2', type: 'shopkeeper', name: 'Malviya Hardware & Ply', phone: '9827000000', address: 'Malviya Nagar, Indore', notes: 'Plywood, Staples, Glue' }
+          ]
+        };
+      };
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('gm_workshop_v3') || localStorage.getItem('gm_workshop_v2');
+          if (!raw) return defaultState();
+          const parsed = JSON.parse(raw);
+          const def = defaultState();
+          let loadedOrder = Array.isArray(parsed.tabOrder) ? parsed.tabOrder.filter((k) => defaultTabOrder.includes(k)) : [];
+          defaultTabOrder.forEach((k) => { if (!loadedOrder.includes(k)) loadedOrder.push(k); });
+          return {
+            tabOrder: loadedOrder.length === defaultTabOrder.length ? loadedOrder : [...defaultTabOrder],
+            openingCash: typeof parsed.openingCash === 'number' ? parsed.openingCash : def.openingCash,
+            monthlyRent: typeof parsed.monthlyRent === 'number' ? parsed.monthlyRent : def.monthlyRent,
+            targetProfit: typeof parsed.targetProfit === 'number' ? parsed.targetProfit : def.targetProfit,
+            sofaUnitProfit: typeof parsed.sofaUnitProfit === 'number' ? parsed.sofaUnitProfit : def.sofaUnitProfit,
+            sofaOrders: Array.isArray(parsed.sofaOrders) ? parsed.sofaOrders : def.sofaOrders,
+            sofas: Array.isArray(parsed.sofas) ? parsed.sofas : def.sofas,
+            hardware: Array.isArray(parsed.hardware) ? parsed.hardware : def.hardware,
+            workNotes: Array.isArray(parsed.workNotes) ? parsed.workNotes : def.workNotes,
+            categories: Array.isArray(parsed.categories) && parsed.categories.length ? parsed.categories : def.categories,
+            expenses: Array.isArray(parsed.expenses) ? parsed.expenses : def.expenses,
+            staff: Array.isArray(parsed.staff) ? parsed.staff : def.staff,
+            attendance: parsed.attendance && typeof parsed.attendance === 'object' ? parsed.attendance : {},
+            udhaar: Array.isArray(parsed.udhaar) ? parsed.udhaar : def.udhaar,
+            myBusiness: parsed.myBusiness || def.myBusiness,
+            contacts: Array.isArray(parsed.contacts) ? parsed.contacts : def.contacts
+          };
+        } catch (e) {
+          return defaultState();
+        }
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+          showToast('Storage full — photo size kam rakhein.');
+        }
+      }
+
+      let state = loadState();
+      let currentTab = state.tabOrder[0] || 'overview';
+      let reorderMode = false;
+      let swapFirstTab = null;
+      let holdTimer = null;
+      let holdTriggered = false;
+      let dragSrcTab = null;
+      let pendingHwPhoto = '';
+      let pendingContactPhoto = '';
+      let pendingOrderPhoto = '';
+      let activeRowPhotoId = '';
+
+      const formatINR = (num) => '₹' + Number(num || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+
+      function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, (c) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+      }
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+        clearTimeout(el._t);
+        el._t = setTimeout(() => el.classList.add('hidden'), 2600);
+      }
+
+      function renderNav() {
+        const nav = document.getElementById('primary-nav');
+        nav.innerHTML = state.tabOrder.map((tabId) => {
+          const active = tabId === currentTab;
+          const isSwapSelected = reorderMode && swapFirstTab === tabId;
+          const baseCls = active ? 'tab-active' : 'tab-inactive';
+          const reorderCls = reorderMode
+            ? (isSwapSelected ? 'ring-2 ring-amber-500 bg-amber-100 text-slate-900' : 'border border-dashed border-slate-400')
+            : '';
+          return `<button type="button" data-tab="${tabId}" draggable="${reorderMode ? 'true' : 'false'}" class="nav-tab ${baseCls} ${reorderCls} px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition">${reorderMode ? '⇄ ' : ''}${escapeHtml(TAB_META[tabId] || tabId)}</button>`;
+        }).join('');
+        document.getElementById('reorder-bar').classList.toggle('hidden', !reorderMode);
+      }
+
+      function switchTab(tab) {
+        currentTab = tab;
+        renderNav();
+        document.querySelectorAll('.tab-view').forEach((sec) => {
+          sec.classList.toggle('hidden', sec.id !== 'view-' + tab);
+        });
+        renderAll();
+      }
+
+      function calcUdhaarMonthlyDue(u) {
+        const rem = Math.max(0, Number(u.amount || 0) - Number(u.paid || 0));
+        if (rem <= 0) return 0;
+        const months = Number(u.months || 0);
+        const pct = Number(u.pct || 0);
+        const monthlyInterest = (rem * pct) / 100;
+        const monthlyPrincipal = months > 0 ? rem / months : 0;
+        return monthlyPrincipal + monthlyInterest;
+      }
+
+      function calcSofaSplit(sell, cost, bizPct, udhaarPct) {
+        const profit = Math.max(0, Number(sell || 0) - Number(cost || 0));
+        const bPct = Math.max(0, Math.min(100, Number(bizPct || 0)));
+        const uPct = Math.max(0, Math.min(100 - bPct, Number(udhaarPct || 0)));
+        const pPct = Math.max(0, 100 - bPct - uPct);
+        const bizAmt = (profit * bPct) / 100;
+        const udhaarAmt = (profit * uPct) / 100;
+        const partnersTotal = (profit * pPct) / 100;
+        const eachPartner = partnersTotal / 3;
+        return { profit, bPct, uPct, pPct, bizAmt, udhaarAmt, partnersTotal, eachPartner };
+      }
+
+      function updateSofaPreview() {
+        const sell = Number(document.getElementById('sofa-sell').value || 0);
+        const cost = Number(document.getElementById('sofa-cost').value || 0);
+        const bizPct = Number(document.getElementById('sofa-biz-pct').value || 0);
+        const udhaarPct = Number(document.getElementById('sofa-udhaar-pct').value || 0);
+        const s = calcSofaSplit(sell, cost, bizPct, udhaarPct);
+
+        document.getElementById('prev-laagat').textContent = formatINR(cost);
+        document.getElementById('prev-profit').textContent = 'Net Profit: ' + formatINR(s.profit);
+        document.getElementById('lbl-biz-pct').textContent = s.bPct;
+        document.getElementById('prev-biz').textContent = formatINR(s.bizAmt);
+        document.getElementById('lbl-udhaar-pct').textContent = s.uPct;
+        document.getElementById('prev-udhaar').textContent = formatINR(s.udhaarAmt);
+        document.getElementById('lbl-part-pct').textContent = s.pPct;
+        document.getElementById('prev-partners-total').textContent = formatINR(s.partnersTotal);
+        document.getElementById('prev-each-partner').textContent =
+          `Jatin ${formatINR(s.eachPartner)} • Ram ${formatINR(s.eachPartner)} • Mohit ${formatINR(s.eachPartner)}`;
+      }
+
+      function getMonthSummary(monthPrefix) {
+        const summary = {};
+        state.staff.forEach((s) => {
+          summary[s.id] = { P: 0, H: 0, A: 0, payable: 0 };
+        });
+        Object.keys(state.attendance).forEach((dateStr) => {
+          if (!dateStr.startsWith(monthPrefix)) return;
+          const dayMap = state.attendance[dateStr] || {};
+          state.staff.forEach((s) => {
+            const mark = dayMap[s.id];
+            if (mark === 'P') summary[s.id].P += 1;
+            else if (mark === 'H') summary[s.id].H += 1;
+            else if (mark === 'A') summary[s.id].A += 1;
+          });
+        });
+        state.staff.forEach((s) => {
+          const rec = summary[s.id];
+          rec.payable = (rec.P + rec.H * 0.5) * Number(s.rate || 0);
+        });
+        return summary;
+      }
+
+      function renderOverview() {
+        const t = todayISO();
+        const monthPrefix = t.slice(0, 7);
+        const hwTotal = state.hardware.reduce((sum, x) => sum + Number(x.qty || 0) * Number(x.rate || 0), 0);
+        const expTotal = state.expenses.reduce((sum, x) => sum + Number(x.amount || 0), 0);
+        const expToday = state.expenses.filter((x) => x.date === t).reduce((sum, x) => sum + Number(x.amount || 0), 0);
+
+        const todayAtt = state.attendance[t] || {};
+        const presentCount = state.staff.filter((s) => todayAtt[s.id] === 'P' || todayAtt[s.id] === 'H').length;
+        const monthSum = getMonthSummary(monthPrefix);
+        const monthWages = Object.values(monthSum).reduce((sum, r) => sum + r.payable, 0);
+
+        const loansTakenTotal = state.udhaar.filter((u) => u.type === 'taken').reduce((s, u) => s + Number(u.amount || 0), 0);
+        const udTakenRem = state.udhaar.filter((u) => u.type === 'taken').reduce((s, u) => s + Math.max(0, Number(u.amount) - Number(u.paid || 0)), 0);
+        const udMonthlyDue = state.udhaar.filter((u) => u.type === 'taken').reduce((s, u) => s + calcUdhaarMonthlyDue(u), 0);
+
+        // Top Business Cash & Pat-Peet ke Bacha
+        const opening = Number(state.openingCash || 0);
+        const sofaSalesTotal = state.sofas.reduce((sum, sf) => sum + Number(sf.sell || 0), 0);
+        const availableCash = opening + loansTakenTotal + sofaSalesTotal - hwTotal - expTotal;
+        const rent = Number(state.monthlyRent || 0);
+        const totalMonthlyDue = monthWages + rent + udMonthlyDue;
+        const netAfterBills = availableCash - totalMonthlyDue;
+
+        document.getElementById('input-opening-cash').value = opening;
+        document.getElementById('input-monthly-rent').value = rent;
+
+        const cashEl = document.getElementById('cash-available');
+        cashEl.textContent = formatINR(availableCash);
+        cashEl.className = 'text-3xl sm:text-4xl font-bold mt-1 ' + (availableCash >= 0 ? 'text-white' : 'text-rose-400');
+        document.getElementById('cash-formula-line').textContent =
+          `Cash ${formatINR(opening)} + Sold ${formatINR(sofaSalesTotal)} + Loan ${formatINR(loansTakenTotal)} − Hardware ${formatINR(hwTotal)} − Kharcha ${formatINR(expTotal)}`;
+
+        document.getElementById('net-labour').textContent = formatINR(monthWages);
+        document.getElementById('net-loan-due').textContent = formatINR(udMonthlyDue);
+        document.getElementById('net-total-due').textContent = formatINR(totalMonthlyDue);
+        const netEl = document.getElementById('net-after-bills');
+        netEl.textContent = formatINR(netAfterBills);
+        netEl.className = 'text-xl font-bold mt-0.5 ' + (netAfterBills >= 0 ? 'text-emerald-400' : 'text-rose-400');
+
+        const perPartner = Number(state.targetProfit ?? 15000);
+        const unitProfit = Math.max(1, Number(state.sofaUnitProfit || 2000));
+        const bizProfitTarget = perPartner * 3;
+        document.getElementById('input-target-profit').value = perPartner;
+        document.getElementById('input-sofa-profit').value = unitProfit;
+        document.getElementById('target-biz-profit').textContent = formatINR(bizProfitTarget);
+        const earnNeeded = bizProfitTarget + totalMonthlyDue;
+        const sofasNeeded = Math.ceil(earnNeeded / unitProfit);
+        document.getElementById('target-earn-needed').textContent = formatINR(earnNeeded);
+        document.getElementById('target-sofas-needed').textContent = sofasNeeded + ' Sofas';
+        document.getElementById('target-compact-summary').textContent =
+          `${formatINR(perPartner)}/partner (${formatINR(bizProfitTarget)}) • Earn ${formatINR(earnNeeded)} (${sofasNeeded} Sofas)`;
+
+        // Render Upcoming Sofa Orders (Compact + Detailed)
+        document.getElementById('order-count-badge').textContent = state.sofaOrders.length + ' Pending';
+        document.getElementById('sold-count-badge-top').textContent = state.sofas.length + ' Sold';
+        const ordList = document.getElementById('sofa-orders-list');
+        const ordCompact = document.getElementById('sofa-orders-compact');
+        if (!state.sofaOrders.length) {
+          ordCompact.innerHTML = '<span class="text-xs text-slate-400">Koi pending order nahi</span>';
+          ordList.innerHTML = '<p class="sm:col-span-2 lg:col-span-3 text-xs text-slate-400 py-2">Koi pending sofa order nahi hai.</p>';
+        } else {
+          const sortedOrders = [...state.sofaOrders].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+          const getBadgeInfo = (dStr) => {
+            const diffDays = Math.round((new Date(dStr + 'T00:00:00') - new Date(t + 'T00:00:00')) / 86400000);
+            if (diffDays <= 0) {
+              return { num: diffDays === 0 ? 'AAJ' : String(diffDays), sub: diffDays === 0 ? 'due' : 'late', cls: 'bg-rose-600 text-white', pillCls: 'bg-rose-50 text-rose-800 border-rose-200' };
+            }
+            if (diffDays <= 2) {
+              return { num: String(diffDays), sub: 'days', cls: 'bg-amber-400 text-amber-950', pillCls: 'bg-amber-50 text-amber-900 border-amber-200' };
+            }
+            return { num: String(diffDays), sub: 'days', cls: 'bg-emerald-600 text-white', pillCls: 'bg-emerald-50 text-emerald-900 border-emerald-200' };
+          };
+          ordCompact.innerHTML = sortedOrders.map((ord) => {
+            const bi = getBadgeInfo(ord.date);
+            const who = ord.client ? ' • ' + ord.client : '';
+            return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-xs font-medium ${bi.pillCls}"><span>${escapeHtml(ord.name)}${escapeHtml(who)}</span><strong class="text-sm font-bold">${escapeHtml(bi.num)}</strong><span class="text-[10px] opacity-75">${escapeHtml(bi.sub)}</span></span>`;
+          }).join('');
+          ordList.innerHTML = sortedOrders.map((ord) => {
+            const bi = getBadgeInfo(ord.date);
+            return `
+              <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-2.5">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-11 h-11 rounded-xl ${bi.cls} flex flex-col items-center justify-center shrink-0 leading-none">
+                    <span class="text-base font-extrabold">${escapeHtml(bi.num)}</span>
+                    <span class="text-[9px] uppercase font-medium opacity-90 mt-0.5">${escapeHtml(bi.sub)}</span>
+                  </div>
+                  ${ord.photo ? `<button type="button" data-action="view-order-photo" data-id="${ord.id}" class="shrink-0"><img src="${ord.photo}" alt="${escapeHtml(ord.name)}" class="w-11 h-11 rounded-xl object-cover border border-slate-200" /></button>` : ''}
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-slate-900 truncate">${escapeHtml(ord.name)}</p>
+                    <p class="text-xs text-slate-500 truncate">${ord.client ? escapeHtml(ord.client) + ' • ' : ''}${escapeHtml(ord.date)}</p>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-1 shrink-0">
+                  <button type="button" data-action="mark-sold" data-id="${ord.id}" class="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">Sold ✓</button>
+                  <button type="button" data-action="del-order" data-id="${ord.id}" class="px-2 py-0.5 text-[11px] text-rose-600 hover:underline">Delete</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // KPIs
+        document.getElementById('kpi-hardware').textContent = formatINR(hwTotal);
+        document.getElementById('kpi-hardware-count').textContent = state.hardware.length + ' items logged';
+        document.getElementById('kpi-expenses').textContent = formatINR(expTotal);
+        document.getElementById('kpi-expenses-today').textContent = 'Today: ' + formatINR(expToday);
+        document.getElementById('kpi-attendance').textContent = presentCount + ' / ' + state.staff.length;
+        document.getElementById('kpi-wages').textContent = 'Month wages: ' + formatINR(monthWages);
+        document.getElementById('kpi-udhaar-due').textContent = formatINR(udMonthlyDue);
+        document.getElementById('kpi-udhaar-net').textContent = 'Baki Loan: ' + formatINR(udTakenRem);
+
+        // Render Sold Sofas Ledger (With Photo, Cost, Selling, Fayda & Partner Split)
+        document.getElementById('sofa-count-badge').textContent = state.sofas.length + ' Sold';
+        const sBody = document.getElementById('sofa-table-body');
+        const sFoot = document.getElementById('sofa-table-foot');
+        if (!state.sofas.length) {
+          sBody.innerHTML = '<tr><td colspan="9" class="py-5 text-center text-slate-400">Abhi koi sofa sold record nahi hai.</td></tr>';
+          sFoot.innerHTML = '';
+        } else {
+          let totSell = 0, totCost = 0, totProfit = 0, totBiz = 0, totUd = 0, totEach = 0;
+          sBody.innerHTML = state.sofas.map((sf) => {
+            const sp = calcSofaSplit(sf.sell, sf.cost, sf.bizPct ?? 15, sf.udhaarPct ?? 25);
+            totSell += Number(sf.sell || 0);
+            totCost += Number(sf.cost || 0);
+            totProfit += sp.profit;
+            totBiz += sp.bizAmt;
+            totUd += sp.udhaarAmt;
+            totEach += sp.eachPartner;
+            const photoCell = sf.photo
+              ? `<button type="button" data-action="view-sofa-photo" data-id="${sf.id}"><img src="${sf.photo}" alt="${escapeHtml(sf.name)}" class="w-9 h-9 rounded-lg object-cover border border-slate-200" /></button>`
+              : '<span class="text-xs text-slate-300">—</span>';
+            return `
+              <tr class="hover:bg-slate-50">
+                <td class="py-2 pr-3">${photoCell}</td>
+                <td class="py-2 pr-3 text-slate-500 whitespace-nowrap">${escapeHtml(sf.date)}</td>
+                <td class="py-2 pr-3">
+                  <p class="font-medium text-slate-900">${escapeHtml(sf.name)}</p>
+                  ${sf.client ? `<p class="text-[11px] text-slate-500">${escapeHtml(sf.client)}</p>` : ''}
+                </td>
+                <td class="py-2 pr-3 whitespace-nowrap">${formatINR(sf.sell)}</td>
+                <td class="py-2 pr-3 whitespace-nowrap">${formatINR(sf.cost)}</td>
+                <td class="py-2 pr-3 font-semibold text-emerald-700 whitespace-nowrap">${formatINR(sp.profit)}</td>
+                <td class="py-2 pr-3 text-xs whitespace-nowrap"><span class="text-blue-700">${formatINR(sp.bizAmt)}</span> / <span class="text-rose-700">${formatINR(sp.udhaarAmt)}</span></td>
+                <td class="py-2 pr-3 text-emerald-700 font-semibold whitespace-nowrap">${formatINR(sp.eachPartner)} each</td>
+                <td class="py-2 text-right">
+                  <button type="button" data-action="del-sofa" data-id="${sf.id}" class="text-xs text-rose-600 hover:underline">Delete</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+          sFoot.innerHTML = `
+            <tr>
+              <td colspan="3" class="py-2.5 pr-3">Total (${state.sofas.length} Sold)</td>
+              <td class="py-2.5 pr-3 whitespace-nowrap">${formatINR(totSell)}</td>
+              <td class="py-2.5 pr-3 whitespace-nowrap">${formatINR(totCost)}</td>
+              <td class="py-2.5 pr-3 text-emerald-800 whitespace-nowrap">${formatINR(totProfit)}</td>
+              <td class="py-2.5 pr-3 text-xs whitespace-nowrap">${formatINR(totBiz)} / ${formatINR(totUd)}</td>
+              <td colspan="2" class="py-2.5 text-emerald-800 whitespace-nowrap">${formatINR(totEach)} each (Jatin, Ram, Mohit)</td>
+            </tr>
+          `;
+        }
+
+        const feed = [];
+        state.hardware.slice(0, 4).forEach((x) => {
+          feed.push({ date: x.date, label: 'Hardware: ' + x.item + ' (' + x.qty + ' ' + x.unit + ')', amt: formatINR(x.qty * x.rate), badge: 'bg-blue-50 text-blue-700', tag: 'HW' });
+        });
+        state.expenses.slice(0, 4).forEach((x) => {
+          feed.push({ date: x.date, label: x.category + ': ' + x.desc, amt: formatINR(x.amount), badge: 'bg-amber-50 text-amber-700', tag: 'EXP' });
+        });
+        feed.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+        const feedEl = document.getElementById('recent-feed');
+        if (!feed.length) {
+          feedEl.innerHTML = '<p class="text-slate-400 py-4 text-center">Abhi koi entry nahi hai.</p>';
+        } else {
+          feedEl.innerHTML = feed.slice(0, 6).map((item) => `
+            <div class="py-2.5 flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="px-2 py-0.5 text-[11px] font-semibold rounded-md ${item.badge}">${item.tag}</span>
+                <div class="min-w-0">
+                  <p class="text-slate-800 font-medium truncate">${escapeHtml(item.label)}</p>
+                  <p class="text-xs text-slate-400">${escapeHtml(item.date)}</p>
+                </div>
+              </div>
+              <span class="font-semibold text-slate-900 shrink-0">${item.amt}</span>
+            </div>
+          `).join('');
+        }
+      }
+
+      function renderHardware() {
+        const dl = document.getElementById('shopkeeper-suggestions');
+        dl.innerHTML = state.contacts
+          .filter((c) => c.type === 'shopkeeper')
+          .map((c) => `<option value="${escapeHtml(c.name)}"></option>`)
+          .join('');
+
+        const q = (document.getElementById('hw-search').value || '').trim().toLowerCase();
+        const filtered = state.hardware.filter((x) =>
+          x.item.toLowerCase().includes(q) || (x.supplier || '').toLowerCase().includes(q)
+        );
+        const total = filtered.reduce((s, x) => s + Number(x.qty || 0) * Number(x.rate || 0), 0);
+        document.getElementById('hw-summary-line').textContent = filtered.length + ' items • Total: ' + formatINR(total);
+        document.getElementById('hw-acc-summary').textContent = filtered.length + ' items • Total: ' + formatINR(total);
+
+        const tbody = document.getElementById('hw-table-body');
+        if (!filtered.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-400">Koi hardware entry nahi mili.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = filtered.map((x) => {
+          const rowTotal = Number(x.qty || 0) * Number(x.rate || 0);
+          const photoBtn = x.photo
+            ? `<button type="button" data-action="view-photo" data-id="${x.id}" class="text-xs font-medium text-blue-600 hover:underline">View</button>`
+            : `<button type="button" data-action="add-row-photo" data-id="${x.id}" class="text-xs font-medium text-slate-500 hover:text-slate-900">+ Photo</button>`;
+          return `
+            <tr class="hover:bg-slate-50">
+              <td class="py-2.5 pr-3 text-slate-500 whitespace-nowrap">${escapeHtml(x.date)}</td>
+              <td class="py-2.5 pr-3">
+                <p class="font-medium text-slate-900">${escapeHtml(x.item)}</p>
+                ${x.supplier ? `<p class="text-xs text-slate-400">${escapeHtml(x.supplier)}</p>` : ''}
+              </td>
+              <td class="py-2.5 pr-3 whitespace-nowrap">${escapeHtml(String(x.qty))} ${escapeHtml(x.unit)}</td>
+              <td class="py-2.5 pr-3 whitespace-nowrap">${formatINR(x.rate)}</td>
+              <td class="py-2.5 pr-3 font-semibold text-slate-900 whitespace-nowrap">${formatINR(rowTotal)}</td>
+              <td class="py-2.5 pr-3 whitespace-nowrap">${photoBtn}</td>
+              <td class="py-2.5 text-right whitespace-nowrap">
+                <button type="button" data-action="del-hw" data-id="${x.id}" class="text-xs text-rose-600 hover:underline">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function renderCategorySelects() {
+        const sel = document.getElementById('exp-category');
+        const prev = sel.value;
+        const ordered = state.categories.filter((c) => c !== 'Other');
+        if (state.categories.includes('Other')) ordered.push('Other');
+
+        sel.innerHTML = ordered.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')
+          + '<option value="__ADD_NEW__">+ Add / Edit Category...</option>';
+        if (prev && ordered.includes(prev)) sel.value = prev;
+
+        const filterSel = document.getElementById('exp-filter-cat');
+        const prevFilter = filterSel.value || 'ALL';
+        filterSel.innerHTML = '<option value="ALL">All Categories</option>'
+          + ordered.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+        filterSel.value = ordered.includes(prevFilter) ? prevFilter : 'ALL';
+      }
+
+      function renderCategoryManager() {
+        const listEl = document.getElementById('cat-manager-list');
+        listEl.innerHTML = state.categories.map((cat, idx) => `
+          <div class="py-2.5 flex items-center justify-between gap-2">
+            <span class="text-sm font-medium text-slate-800">${escapeHtml(cat)}</span>
+            <div class="flex items-center gap-2">
+              <button type="button" data-action="edit-cat" data-idx="${idx}" class="text-xs font-medium text-blue-600 hover:underline">Edit</button>
+              ${state.categories.length > 1 ? `<button type="button" data-action="del-cat" data-idx="${idx}" class="text-xs font-medium text-rose-600 hover:underline">Delete</button>` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      function renderWorkNotes() {
+        const listEl = document.getElementById('work-notes-list');
+        document.getElementById('work-count-badge').textContent = state.workNotes.length + ' pending';
+        if (!state.workNotes.length) {
+          listEl.innerHTML = '<p class="py-3 text-xs text-amber-800/70 text-center">Koi pending kaam nahi hai — upar se naya kaam likhein.</p>';
+          return;
+        }
+        listEl.innerHTML = state.workNotes.map((w) => `
+          <label class="py-2.5 flex items-center gap-3 cursor-pointer hover:bg-amber-100/40 px-1 rounded transition">
+            <input type="checkbox" data-work-done="${w.id}" class="w-4 h-4 accent-amber-900 rounded shrink-0" />
+            <span class="px-2 py-0.5 text-[11px] font-semibold rounded bg-amber-200/80 text-amber-950 shrink-0">${escapeHtml(w.date ? w.date : (w.day || 'Aaj'))}</span>
+            <span class="text-sm text-amber-950 flex-1">${escapeHtml(w.text)}</span>
+          </label>
+        `).join('');
+      }
+
+      function renderExpenses() {
+        renderWorkNotes();
+        renderCategorySelects();
+        const cat = document.getElementById('exp-filter-cat').value || 'ALL';
+        const filtered = cat === 'ALL' ? state.expenses : state.expenses.filter((x) => x.category === cat);
+        const total = filtered.reduce((s, x) => s + Number(x.amount || 0), 0);
+        document.getElementById('exp-summary-line').textContent = filtered.length + ' entries • Total: ' + formatINR(total);
+
+        const tbody = document.getElementById('exp-table-body');
+        if (!filtered.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-400">Koi kharcha entry nahi hai.</td></tr>';
+        } else {
+          tbody.innerHTML = filtered.map((x) => `
+            <tr class="hover:bg-slate-50">
+              <td class="py-2.5 pr-3 text-slate-500 whitespace-nowrap">${escapeHtml(x.date)}</td>
+              <td class="py-2.5 pr-3"><span class="px-2 py-0.5 text-xs font-medium rounded-md bg-slate-100 text-slate-700">${escapeHtml(x.category)}</span></td>
+              <td class="py-2.5 pr-3 text-slate-900">${escapeHtml(x.desc)}</td>
+              <td class="py-2.5 pr-3 text-slate-500">${escapeHtml(x.mode)}</td>
+              <td class="py-2.5 pr-3 font-semibold text-slate-900 whitespace-nowrap">${formatINR(x.amount)}</td>
+              <td class="py-2.5 text-right">
+                <button type="button" data-action="del-exp" data-id="${x.id}" class="text-xs text-rose-600 hover:underline">Delete</button>
+              </td>
+            </tr>
+          `).join('');
+        }
+
+        const monthVal = document.getElementById('exp-month-picker').value || todayISO().slice(0, 7);
+        const monthExps = state.expenses.filter((x) => (x.date || '').startsWith(monthVal));
+        const totalsByCat = {};
+        state.categories.forEach((c) => { totalsByCat[c] = 0; });
+        monthExps.forEach((x) => {
+          totalsByCat[x.category] = (totalsByCat[x.category] || 0) + Number(x.amount || 0);
+        });
+
+        const breakdownEl = document.getElementById('exp-cat-breakdown');
+        breakdownEl.innerHTML = Object.entries(totalsByCat).map(([cName, cTotal]) => `
+          <button type="button" data-filter-cat="${escapeHtml(cName)}" class="cat-card text-left p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex items-center justify-between gap-2">
+            <span class="text-sm font-medium text-slate-800 truncate">${escapeHtml(cName)}</span>
+            <span class="text-sm font-bold text-slate-900 shrink-0">${formatINR(cTotal)}</span>
+          </button>
+        `).join('');
+      }
+
+      function renderAttendance() {
+        const dateEl = document.getElementById('att-date');
+        const selDate = dateEl.value || todayISO();
+        const dayMap = state.attendance[selDate] || {};
+
+        const listEl = document.getElementById('att-daily-list');
+        if (!state.staff.length) {
+          listEl.innerHTML = '<p class="py-6 text-center text-slate-400 text-sm">Staff add karne ke liye "+ Add Staff" dabayein.</p>';
+        } else {
+          listEl.innerHTML = state.staff.map((s) => {
+            const status = dayMap[s.id] || '';
+            const btnCls = (code, activeColor) => status === code
+              ? `${activeColor} text-white border-transparent`
+              : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50';
+            return `
+              <div class="py-3 flex flex-wrap items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold text-slate-900 truncate">${escapeHtml(s.name)}</p>
+                  <p class="text-xs text-slate-500 truncate">${escapeHtml(s.role || 'Staff')} • ${formatINR(s.rate)}/day</p>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button type="button" data-action="mark-att" data-id="${s.id}" data-val="P" class="w-9 h-9 rounded-lg border text-xs font-bold transition ${btnCls('P', 'bg-emerald-600')}">P</button>
+                  <button type="button" data-action="mark-att" data-id="${s.id}" data-val="H" class="w-9 h-9 rounded-lg border text-xs font-bold transition ${btnCls('H', 'bg-amber-500')}">H</button>
+                  <button type="button" data-action="mark-att" data-id="${s.id}" data-val="A" class="w-9 h-9 rounded-lg border text-xs font-bold transition ${btnCls('A', 'bg-rose-600')}">A</button>
+                  <button type="button" data-action="edit-staff" data-id="${s.id}" class="ml-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg">Edit</button>
+                  <button type="button" data-action="del-staff" data-id="${s.id}" class="px-2.5 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg">Del</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        const monthPrefix = selDate.slice(0, 7);
+        document.getElementById('att-month-label').textContent = 'Month: ' + monthPrefix;
+        const summary = getMonthSummary(monthPrefix);
+        let grandTotal = 0;
+
+        const tbody = document.getElementById('att-summary-body');
+        tbody.innerHTML = state.staff.map((s) => {
+          const rec = summary[s.id] || { P: 0, H: 0, A: 0, payable: 0 };
+          grandTotal += rec.payable;
+          return `
+            <tr class="hover:bg-slate-50">
+              <td class="py-2.5 pr-3 font-medium text-slate-900">${escapeHtml(s.name)}</td>
+              <td class="py-2.5 pr-3 text-slate-500">${escapeHtml(s.role || '—')}</td>
+              <td class="py-2.5 pr-3">${formatINR(s.rate)}</td>
+              <td class="py-2.5 pr-3 font-semibold text-emerald-700">${rec.P}</td>
+              <td class="py-2.5 pr-3 font-semibold text-amber-600">${rec.H}</td>
+              <td class="py-2.5 pr-3 font-semibold text-rose-600">${rec.A}</td>
+              <td class="py-2.5 pr-3 font-bold text-slate-900">${formatINR(rec.payable)}</td>
+              <td class="py-2.5 text-right whitespace-nowrap space-x-2">
+                <button type="button" data-action="edit-staff" data-id="${s.id}" class="text-xs text-blue-600 hover:underline">Edit</button>
+                <button type="button" data-action="del-staff" data-id="${s.id}" class="text-xs text-rose-600 hover:underline">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+        document.getElementById('att-total-wages').textContent = 'Total Payable: ' + formatINR(grandTotal);
+      }
+
+      function renderUdhaar() {
+        let totTaken = 0, totGiven = 0, monthlyDue = 0;
+        state.udhaar.forEach((u) => {
+          const rem = Math.max(0, Number(u.amount || 0) - Number(u.paid || 0));
+          if (u.type === 'taken') {
+            totTaken += rem;
+            monthlyDue += calcUdhaarMonthlyDue(u);
+          } else {
+            totGiven += rem;
+          }
+        });
+        document.getElementById('ud-total-taken').textContent = formatINR(totTaken);
+        document.getElementById('ud-total-given').textContent = formatINR(totGiven);
+        document.getElementById('ud-monthly-due').textContent = formatINR(monthlyDue);
+
+        const allNames = new Set();
+        state.udhaar.forEach((u) => { if (u.party) allNames.add(u.party); });
+        state.contacts.forEach((c) => { if (c.name) allNames.add(c.name); });
+        state.staff.forEach((st) => { if (st.name) allNames.add(st.name); });
+        document.getElementById('ud-party-suggestions').innerHTML = Array.from(allNames)
+          .map((n) => `<option value="${escapeHtml(n)}"></option>`)
+          .join('');
+
+        const qName = (document.getElementById('ud-search-name').value || '').trim().toLowerCase();
+        const udParties = Array.from(new Set(state.udhaar.map((u) => u.party).filter(Boolean)));
+        document.getElementById('ud-name-pills').innerHTML = udParties.map((p) => {
+          const isSel = qName === p.toLowerCase();
+          return `<button type="button" data-ud-name="${escapeHtml(p)}" class="px-2.5 py-1 rounded-full text-xs font-medium border transition ${isSel ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">${escapeHtml(p)}</button>`;
+        }).join('');
+
+        const filter = document.getElementById('ud-filter').value || 'ALL';
+        const items = state.udhaar.filter((u) => {
+          const matchType = filter === 'ALL' || u.type === filter;
+          const matchName = !qName || (u.party || '').toLowerCase().includes(qName);
+          return matchType && matchName;
+        });
+        const tbody = document.getElementById('ud-table-body');
+        if (!items.length) {
+          tbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-slate-400">Koi udhaar entry nahi hai.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = items.map((u) => {
+          const rem = Math.max(0, Number(u.amount || 0) - Number(u.paid || 0));
+          const mDue = calcUdhaarMonthlyDue(u);
+          const badge = u.type === 'taken'
+            ? '<span class="px-2 py-0.5 text-xs font-medium rounded-md bg-rose-50 text-rose-700">Liya</span>'
+            : '<span class="px-2 py-0.5 text-xs font-medium rounded-md bg-emerald-50 text-emerald-700">Diya</span>';
+          const termLabel = (u.months > 0 ? u.months + 'm' : '—') + ' / ' + Number(u.pct || 0) + '%';
+          return `
+            <tr class="hover:bg-slate-50">
+              <td class="py-2.5 pr-3">${badge}</td>
+              <td class="py-2.5 pr-3">
+                <p class="font-medium text-slate-900">${escapeHtml(u.party)}</p>
+                <p class="text-xs text-slate-400">${escapeHtml(u.date || '')}</p>
+              </td>
+              <td class="py-2.5 pr-3 whitespace-nowrap">${formatINR(u.amount)}</td>
+              <td class="py-2.5 pr-3 whitespace-nowrap text-slate-500">${formatINR(u.paid || 0)}</td>
+              <td class="py-2.5 pr-3 font-semibold whitespace-nowrap">${formatINR(rem)}</td>
+              <td class="py-2.5 pr-3 whitespace-nowrap text-slate-600">${termLabel}</td>
+              <td class="py-2.5 pr-3 font-semibold text-rose-600 whitespace-nowrap">${formatINR(mDue)}</td>
+              <td class="py-2.5 text-right whitespace-nowrap space-x-2">
+                ${rem > 0 ? `<button type="button" data-action="pay-ud" data-id="${u.id}" class="text-xs font-medium text-blue-600 hover:underline">+ Pay</button>` : '<span class="text-xs text-emerald-600">Settled</span>'}
+                <button type="button" data-action="del-ud" data-id="${u.id}" class="text-xs text-rose-600 hover:underline">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function isSafeHttpUrl(url) {
+        return typeof url === 'string' && /^https?:\/\//i.test(url.trim());
+      }
+
+      function renderDirectory() {
+        document.getElementById('my-biz-name').textContent = state.myBusiness.name;
+        document.getElementById('my-biz-address').textContent = state.myBusiness.address;
+        document.getElementById('my-biz-contact').textContent = state.myBusiness.contact;
+        const myMapEl = document.getElementById('my-biz-map-link');
+        if (isSafeHttpUrl(state.myBusiness.mapUrl)) {
+          myMapEl.href = state.myBusiness.mapUrl.trim();
+          myMapEl.classList.remove('hidden');
+        } else {
+          myMapEl.classList.add('hidden');
+        }
+
+        const qClient = (document.getElementById('search-clients').value || '').trim().toLowerCase();
+        const qShop = (document.getElementById('search-shopkeepers').value || '').trim().toLowerCase();
+
+        const renderList = (type, query, elId) => {
+          const items = state.contacts.filter((c) =>
+            c.type === type &&
+            (c.name.toLowerCase().includes(query) || (c.address || '').toLowerCase().includes(query) || (c.notes || '').toLowerCase().includes(query))
+          );
+          const el = document.getElementById(elId);
+          if (!items.length) {
+            el.innerHTML = '<p class="py-6 text-center text-xs text-slate-400">Abhi koi entry nahi hai.</p>';
+            return;
+          }
+          el.innerHTML = items.map((c) => `
+            <div class="py-3 flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3 min-w-0">
+                ${c.photo ? `<button type="button" data-action="view-contact-photo" data-id="${c.id}" class="shrink-0"><img src="${c.photo}" alt="${escapeHtml(c.name)}" class="w-11 h-11 rounded-xl object-cover border border-slate-200" /></button>` : ''}
+                <div class="min-w-0 space-y-0.5">
+                  <p class="text-sm font-semibold text-slate-900">${escapeHtml(c.name)}</p>
+                ${c.address ? `<p class="text-xs text-slate-600">${escapeHtml(c.address)}</p>` : ''}
+                ${c.notes ? `<p class="text-xs text-slate-500">${escapeHtml(c.notes)}</p>` : ''}
+                <div class="flex flex-wrap items-center gap-3">
+                  ${c.phone ? `<a href="tel:${escapeHtml(c.phone)}" class="inline-block text-xs font-medium text-blue-600 hover:underline">${escapeHtml(c.phone)}</a>` : ''}
+                  ${isSafeHttpUrl(c.mapUrl) ? `<a href="${escapeHtml(c.mapUrl.trim())}" target="_blank" rel="noopener noreferrer" class="inline-block text-xs font-medium text-emerald-700 hover:underline">📍 Google Location</a>` : ''}
+                </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button type="button" data-action="edit-contact" data-id="${c.id}" class="text-xs text-blue-600 hover:underline">Edit</button>
+                <button type="button" data-action="del-contact" data-id="${c.id}" class="text-xs text-rose-600 hover:underline">Delete</button>
+              </div>
+            </div>
+          `).join('');
+        };
+
+        renderList('client', qClient, 'list-clients');
+        renderList('shopkeeper', qShop, 'list-shopkeepers');
+      }
+
+      function renderAll() {
+        renderOverview();
+        renderHardware();
+        renderExpenses();
+        renderAttendance();
+        renderUdhaar();
+        renderDirectory();
+      }
+
+      function compressImage(file, cb) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const maxW = 800;
+            const scale = img.width > maxW ? maxW / img.width : 1;
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            cb(canvas.toDataURL('image/jpeg', 0.72));
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // Init Dates
+      const t = todayISO();
+      document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+      document.getElementById('sofa-date').value = t;
+      document.getElementById('order-date').value = t;
+      document.getElementById('work-date').value = t;
+      document.getElementById('hw-date').value = t;
+      document.getElementById('exp-date').value = t;
+      document.getElementById('att-date').value = t;
+      document.getElementById('ud-date').value = t;
+      document.getElementById('exp-month-picker').value = t.slice(0, 7);
+
+      // Opening Cash & Monthly Rent
+      document.getElementById('btn-save-cash').addEventListener('click', () => {
+        state.openingCash = Math.max(0, Number(document.getElementById('input-opening-cash').value || 0));
+        saveState();
+        renderOverview();
+        showToast('Business cash update ho gaya!');
+      });
+      document.getElementById('input-monthly-rent').addEventListener('input', (e) => {
+        state.monthlyRent = Math.max(0, Number(e.target.value || 0));
+        saveState();
+        renderOverview();
+      });
+      document.getElementById('input-target-profit').addEventListener('input', (e) => {
+        state.targetProfit = Math.max(0, Number(e.target.value || 0));
+        saveState();
+        renderOverview();
+      });
+      document.getElementById('input-sofa-profit').addEventListener('input', (e) => {
+        state.sofaUnitProfit = Math.max(1, Number(e.target.value || 1));
+        saveState();
+        renderOverview();
+      });
+
+      // Navigation: Tap to switch, Hold 2s to enter Reorder Mode & interchange tabs
+      const navEl = document.getElementById('primary-nav');
+      const startHold = (e) => {
+        const btn = e.target.closest('.nav-tab');
+        if (!btn) return;
+        holdTriggered = false;
+        clearTimeout(holdTimer);
+        holdTimer = setTimeout(() => {
+          holdTriggered = true;
+          reorderMode = true;
+          swapFirstTab = null;
+          renderNav();
+          showToast('Reorder Mode ON — 2 tabs par tap karke interchange karein!');
+        }, 1800);
+      };
+      const cancelHold = () => clearTimeout(holdTimer);
+
+      navEl.addEventListener('mousedown', startHold);
+      navEl.addEventListener('touchstart', startHold, { passive: true });
+      navEl.addEventListener('mouseup', cancelHold);
+      navEl.addEventListener('mouseleave', cancelHold);
+      navEl.addEventListener('touchend', cancelHold);
+      navEl.addEventListener('touchcancel', cancelHold);
+
+      navEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('.nav-tab');
+        if (!btn) return;
+        if (holdTriggered) {
+          holdTriggered = false;
+          return;
+        }
+        const tabId = btn.dataset.tab;
+        if (reorderMode) {
+          if (!swapFirstTab) {
+            swapFirstTab = tabId;
+            document.getElementById('reorder-hint').textContent = `"${TAB_META[tabId]}" chuna gaya — ab doosre tab par tap karein`;
+            renderNav();
+          } else if (swapFirstTab === tabId) {
+            swapFirstTab = null;
+            document.getElementById('reorder-hint').textContent = 'Reorder Mode: Kisi bhi 2 tabs par tap karke interchange karein';
+            renderNav();
+          } else {
+            const i1 = state.tabOrder.indexOf(swapFirstTab);
+            const i2 = state.tabOrder.indexOf(tabId);
+            if (i1 !== -1 && i2 !== -1) {
+              const tmp = state.tabOrder[i1];
+              state.tabOrder[i1] = state.tabOrder[i2];
+              state.tabOrder[i2] = tmp;
+              saveState();
+              showToast('Headings interchange ho gayi!');
+            }
+            swapFirstTab = null;
+            document.getElementById('reorder-hint').textContent = 'Reorder Mode: Kisi bhi 2 tabs par tap karke interchange karein';
+            renderNav();
+          }
+        } else {
+          switchTab(tabId);
+        }
+      });
+
+      navEl.addEventListener('dragstart', (e) => {
+        const btn = e.target.closest('.nav-tab');
+        if (!btn || !reorderMode) return;
+        dragSrcTab = btn.dataset.tab;
+      });
+      navEl.addEventListener('dragover', (e) => {
+        if (reorderMode) e.preventDefault();
+      });
+      navEl.addEventListener('drop', (e) => {
+        if (!reorderMode || !dragSrcTab) return;
+        const btn = e.target.closest('.nav-tab');
+        if (!btn) return;
+        const targetTab = btn.dataset.tab;
+        const i1 = state.tabOrder.indexOf(dragSrcTab);
+        const i2 = state.tabOrder.indexOf(targetTab);
+        if (i1 !== -1 && i2 !== -1 && i1 !== i2) {
+          const tmp = state.tabOrder[i1];
+          state.tabOrder[i1] = state.tabOrder[i2];
+          state.tabOrder[i2] = tmp;
+          saveState();
+          renderNav();
+          showToast('Headings interchange ho gayi!');
+        }
+        dragSrcTab = null;
+      });
+
+      document.getElementById('btn-done-reorder').addEventListener('click', () => {
+        reorderMode = false;
+        swapFirstTab = null;
+        renderNav();
+      });
+      document.querySelectorAll('.quick-jump').forEach((btn) => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.jump));
+      });
+
+      // Sofa Profit Split
+      ['sofa-sell', 'sofa-cost', 'sofa-biz-pct', 'sofa-udhaar-pct'].forEach((id) => {
+        document.getElementById(id).addEventListener('input', updateSofaPreview);
+      });
+      updateSofaPreview();
+
+      document.getElementById('form-sofa').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('sofa-name').value.trim();
+        const sell = Number(document.getElementById('sofa-sell').value || 0);
+        const cost = Number(document.getElementById('sofa-cost').value || 0);
+        const bizPct = Number(document.getElementById('sofa-biz-pct').value || 0);
+        const udhaarPct = Number(document.getElementById('sofa-udhaar-pct').value || 0);
+        const date = document.getElementById('sofa-date').value || todayISO();
+
+        state.sofas.unshift({ id: 'sf_' + Date.now(), date, name, sell, cost, bizPct, udhaarPct });
+        saveState();
+        document.getElementById('sofa-name').value = '';
+        renderAll();
+        showToast('Sofa profit split save ho gaya!');
+      });
+
+      document.getElementById('sofa-table-body').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.dataset.action === 'del-sofa') {
+          state.sofas = state.sofas.filter((sf) => sf.id !== id);
+          saveState();
+          renderAll();
+          showToast('Sofa entry delete ho gayi.');
+        } else if (btn.dataset.action === 'view-sofa-photo') {
+          const sf = state.sofas.find((x) => x.id === id);
+          if (sf && sf.photo) {
+            document.getElementById('modal-photo-title').textContent = sf.name;
+            document.getElementById('modal-photo-img').src = sf.photo;
+            document.getElementById('modal-photo').classList.remove('hidden');
+          }
+        }
+      });
+
+      // Live Hardware Total & Photo Preview
+      const updateLiveHwTotal = () => {
+        const q = Number(document.getElementById('hw-qty').value || 0);
+        const r = Number(document.getElementById('hw-rate').value || 0);
+        document.getElementById('hw-live-total').textContent = formatINR(q * r);
+      };
+      document.getElementById('hw-qty').addEventListener('input', updateLiveHwTotal);
+      document.getElementById('hw-rate').addEventListener('input', updateLiveHwTotal);
+
+      const clearPendingPhoto = () => {
+        pendingHwPhoto = '';
+        document.getElementById('hw-photo').value = '';
+        document.getElementById('hw-photo-preview').classList.add('hidden');
+        document.getElementById('hw-photo-clear').classList.add('hidden');
+        document.getElementById('hw-photo-status').textContent = 'Saman lete hi bill ki photo click ya select karein';
+      };
+
+      document.getElementById('hw-photo').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        compressImage(file, (dataUrl) => {
+          pendingHwPhoto = dataUrl;
+          const prev = document.getElementById('hw-photo-preview');
+          prev.src = dataUrl;
+          prev.classList.remove('hidden');
+          document.getElementById('hw-photo-clear').classList.remove('hidden');
+          document.getElementById('hw-photo-status').textContent = 'Photo ready — Add Hardware dabayein';
+        });
+      });
+      document.getElementById('hw-photo-clear').addEventListener('click', clearPendingPhoto);
+
+      document.getElementById('form-hardware').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const item = document.getElementById('hw-item').value.trim();
+        const qty = Number(document.getElementById('hw-qty').value);
+        const unit = document.getElementById('hw-unit').value;
+        const rate = Number(document.getElementById('hw-rate').value);
+        const supplier = document.getElementById('hw-supplier').value.trim();
+        const date = document.getElementById('hw-date').value || todayISO();
+
+        state.hardware.unshift({
+          id: 'hw_' + Date.now(),
+          date, item, qty, unit, rate, supplier, photo: pendingHwPhoto || ''
+        });
+        saveState();
+        e.target.reset();
+        document.getElementById('hw-date').value = todayISO();
+        clearPendingPhoto();
+        updateLiveHwTotal();
+        renderAll();
+        showToast('Hardware saman add ho gaya!');
+      });
+
+      document.getElementById('hw-search').addEventListener('input', renderHardware);
+
+      document.getElementById('hw-table-body').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.dataset.action === 'del-hw') {
+          state.hardware = state.hardware.filter((x) => x.id !== id);
+          saveState();
+          renderAll();
+          showToast('Entry delete ho gayi.');
+        } else if (btn.dataset.action === 'view-photo') {
+          const item = state.hardware.find((x) => x.id === id);
+          if (item && item.photo) {
+            document.getElementById('modal-photo-title').textContent = item.item + ' — Parchi';
+            document.getElementById('modal-photo-img').src = item.photo;
+            document.getElementById('modal-photo').classList.remove('hidden');
+          }
+        } else if (btn.dataset.action === 'add-row-photo') {
+          activeRowPhotoId = id;
+          document.getElementById('hw-row-photo-input').click();
+        }
+      });
+
+      document.getElementById('hw-row-photo-input').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file || !activeRowPhotoId) return;
+        compressImage(file, (dataUrl) => {
+          const item = state.hardware.find((x) => x.id === activeRowPhotoId);
+          if (item) {
+            item.photo = dataUrl;
+            saveState();
+            renderAll();
+            showToast('Parchi photo save ho gayi!');
+          }
+          activeRowPhotoId = '';
+          e.target.value = '';
+        });
+      });
+
+      // Expenses & Category Manager
+      const catModal = document.getElementById('modal-categories');
+      const openCatModal = () => {
+        renderCategoryManager();
+        catModal.classList.remove('hidden');
+      };
+      document.getElementById('btn-manage-cats').addEventListener('click', openCatModal);
+      document.getElementById('btn-close-cats').addEventListener('click', () => catModal.classList.add('hidden'));
+
+      document.getElementById('exp-category').addEventListener('change', (e) => {
+        if (e.target.value === '__ADD_NEW__') {
+          e.target.value = state.categories[0] || 'Other';
+          openCatModal();
+        }
+      });
+
+      document.getElementById('form-add-cat').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('new-cat-name').value.trim();
+        if (!name) return;
+        if (state.categories.some((c) => c.toLowerCase() === name.toLowerCase())) {
+          showToast('Yeh category pehle se hai.');
+          return;
+        }
+        state.categories.push(name);
+        saveState();
+        document.getElementById('new-cat-name').value = '';
+        renderCategoryManager();
+        renderExpenses();
+        document.getElementById('exp-category').value = name;
+        showToast('Nayi category add ho gayi!');
+      });
+
+      document.getElementById('cat-manager-list').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const idx = Number(btn.dataset.idx);
+        const oldName = state.categories[idx];
+        if (btn.dataset.action === 'del-cat') {
+          state.categories.splice(idx, 1);
+          saveState();
+          renderCategoryManager();
+          renderExpenses();
+          showToast('Category delete ho gayi.');
+        } else if (btn.dataset.action === 'edit-cat') {
+          const row = btn.closest('div.py-2\\.5');
+          row.innerHTML = `
+            <input type="text" value="${escapeHtml(oldName)}" class="cat-edit-input flex-1 px-2.5 py-1 text-sm rounded-lg border border-slate-300" />
+            <button type="button" data-action="save-cat" data-idx="${idx}" class="px-2.5 py-1 bg-slate-900 text-white text-xs rounded-lg">Save</button>
+          `;
+        } else if (btn.dataset.action === 'save-cat') {
+          const row = btn.closest('div.py-2\\.5');
+          const input = row.querySelector('.cat-edit-input');
+          const newName = (input ? input.value : '').trim();
+          if (!newName) return;
+          state.categories[idx] = newName;
+          state.expenses.forEach((ex) => {
+            if (ex.category === oldName) ex.category = newName;
+          });
+          saveState();
+          renderCategoryManager();
+          renderExpenses();
+          showToast('Category rename ho gayi!');
+        }
+      });
+
+      document.getElementById('work-day').addEventListener('change', (e) => {
+        const val = e.target.value;
+        const base = new Date();
+        if (val === 'Kal') base.setDate(base.getDate() + 1);
+        if (val === 'Aaj' || val === 'Kal') {
+          const off = base.getTimezoneOffset();
+          document.getElementById('work-date').value = new Date(base.getTime() - off * 60000).toISOString().slice(0, 10);
+        }
+      });
+      document.getElementById('work-date').addEventListener('change', () => {
+        document.getElementById('work-day').value = 'Custom';
+      });
+
+      document.getElementById('form-work-note').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const day = document.getElementById('work-day').value;
+        const date = document.getElementById('work-date').value || todayISO();
+        const text = document.getElementById('work-text').value.trim();
+        if (!text) return;
+        state.workNotes.push({ id: 'wn_' + Date.now(), day, date, text });
+        saveState();
+        document.getElementById('work-text').value = '';
+        renderWorkNotes();
+      });
+
+      // Sofa Delivery Orders Listeners
+      document.getElementById('order-photo').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        compressImage(file, (dataUrl) => {
+          pendingOrderPhoto = dataUrl;
+          const prev = document.getElementById('order-photo-preview');
+          prev.src = dataUrl;
+          prev.classList.remove('hidden');
+        });
+      });
+
+      document.querySelectorAll('[data-toggle-acc]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.dataset.toggleAcc;
+          const panel = document.getElementById(targetId);
+          const arrow = document.getElementById('arrow-' + targetId);
+          if (!panel) return;
+          const isHidden = panel.classList.toggle('hidden');
+          if (arrow) arrow.textContent = isHidden ? '▼' : '▲';
+        });
+      });
+
+      document.getElementById('form-sofa-order').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('order-name').value.trim();
+        const client = document.getElementById('order-client').value.trim();
+        const date = document.getElementById('order-date').value || todayISO();
+        if (!name) return;
+        state.sofaOrders.push({ id: 'ord_' + Date.now(), name, client, date, photo: pendingOrderPhoto || '' });
+        saveState();
+        e.target.reset();
+        document.getElementById('order-date').value = todayISO();
+        pendingOrderPhoto = '';
+        document.getElementById('order-photo-preview').classList.add('hidden');
+        renderOverview();
+        showToast('Sofa delivery order add ho gaya!');
+      });
+
+      const soldModal = document.getElementById('modal-mark-sold');
+      document.getElementById('btn-close-sold').addEventListener('click', () => soldModal.classList.add('hidden'));
+      document.getElementById('btn-cancel-sold').addEventListener('click', () => soldModal.classList.add('hidden'));
+
+      document.getElementById('form-mark-sold').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('sold-order-id').value;
+        const ord = state.sofaOrders.find((o) => o.id === id);
+        if (!ord) { soldModal.classList.add('hidden'); return; }
+        const cost = Number(document.getElementById('sold-cost').value || 0);
+        const sell = Number(document.getElementById('sold-sell').value || 0);
+        const date = document.getElementById('sold-date').value || todayISO();
+        const bizPct = Number(document.getElementById('sofa-biz-pct').value || 15);
+        const udhaarPct = Number(document.getElementById('sofa-udhaar-pct').value || 25);
+
+        state.sofas.unshift({
+          id: 'sf_' + Date.now(),
+          date,
+          name: ord.name,
+          client: ord.client || '',
+          sell,
+          cost,
+          bizPct,
+          udhaarPct,
+          photo: ord.photo || ''
+        });
+        state.sofaOrders = state.sofaOrders.filter((o) => o.id !== id);
+        saveState();
+        soldModal.classList.add('hidden');
+        renderAll();
+        showToast('Sofa Sold list mein save ho gaya!');
+      });
+
+      document.getElementById('sofa-orders-list').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.dataset.action === 'mark-sold') {
+          const ord = state.sofaOrders.find((o) => o.id === id);
+          if (!ord) return;
+          document.getElementById('sold-order-id').value = id;
+          document.getElementById('sold-modal-title').textContent = 'Sold: ' + ord.name;
+          document.getElementById('sold-cost').value = ord.cost || '';
+          document.getElementById('sold-sell').value = ord.sell || '';
+          document.getElementById('sold-date').value = todayISO();
+          soldModal.classList.remove('hidden');
+        } else if (btn.dataset.action === 'del-order') {
+          state.sofaOrders = state.sofaOrders.filter((o) => o.id !== id);
+          saveState();
+          renderOverview();
+          showToast('Order deleted.');
+        } else if (btn.dataset.action === 'view-order-photo') {
+          const ord = state.sofaOrders.find((o) => o.id === id);
+          if (ord && ord.photo) {
+            document.getElementById('modal-photo-title').textContent = ord.name;
+            document.getElementById('modal-photo-img').src = ord.photo;
+            document.getElementById('modal-photo').classList.remove('hidden');
+          }
+        }
+      });
+
+      document.getElementById('work-notes-list').addEventListener('change', (e) => {
+        const cb = e.target.closest('input[data-work-done]');
+        if (!cb || !cb.checked) return;
+        const id = cb.dataset.workDone;
+        state.workNotes = state.workNotes.filter((w) => w.id !== id);
+        saveState();
+        renderWorkNotes();
+        showToast('Kaam complete — hata diya gaya!');
+      });
+
+      document.getElementById('form-expense').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const date = document.getElementById('exp-date').value || todayISO();
+        const category = document.getElementById('exp-category').value;
+        const desc = document.getElementById('exp-desc').value.trim();
+        const amount = Number(document.getElementById('exp-amount').value);
+        const modeEl = document.querySelector('input[name="exp-mode"]:checked');
+        const mode = modeEl ? modeEl.value : 'Cash';
+
+        state.expenses.unshift({
+          id: 'ex_' + Date.now(),
+          date, category, desc, amount, mode
+        });
+        saveState();
+        e.target.reset();
+        document.getElementById('exp-date').value = todayISO();
+        renderAll();
+        showToast('Kharcha save ho gaya!');
+      });
+
+      document.getElementById('exp-filter-cat').addEventListener('change', renderExpenses);
+      document.getElementById('exp-month-picker').addEventListener('change', renderExpenses);
+
+      document.getElementById('exp-cat-breakdown').addEventListener('click', (e) => {
+        const card = e.target.closest('button[data-filter-cat]');
+        if (!card) return;
+        document.getElementById('exp-filter-cat').value = card.dataset.filterCat;
+        document.getElementById('acc-exp-reg').classList.remove('hidden');
+        document.getElementById('arrow-acc-exp-reg').textContent = '▲';
+        renderExpenses();
+      });
+
+      document.getElementById('exp-table-body').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action="del-exp"]');
+        if (!btn) return;
+        state.expenses = state.expenses.filter((x) => x.id !== btn.dataset.id);
+        saveState();
+        renderAll();
+        showToast('Kharcha delete ho gaya.');
+      });
+
+      // Attendance & Staff Add / Edit / Delete
+      document.getElementById('att-date').addEventListener('change', renderAttendance);
+
+      const staffModal = document.getElementById('modal-staff');
+      const openStaffModal = (staffObj) => {
+        if (staffObj) {
+          document.getElementById('modal-staff-title').textContent = 'Edit Staff Member';
+          document.getElementById('staff-edit-id').value = staffObj.id;
+          document.getElementById('staff-name').value = staffObj.name;
+          document.getElementById('staff-role').value = staffObj.role || '';
+          document.getElementById('staff-rate').value = staffObj.rate;
+        } else {
+          document.getElementById('modal-staff-title').textContent = 'Add Team Member';
+          document.getElementById('staff-edit-id').value = '';
+          document.getElementById('form-staff').reset();
+        }
+        staffModal.classList.remove('hidden');
+      };
+
+      const handleStaffAction = (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.dataset.action === 'mark-att') {
+          const selDate = document.getElementById('att-date').value || todayISO();
+          if (!state.attendance[selDate]) state.attendance[selDate] = {};
+          state.attendance[selDate][id] = btn.dataset.val;
+          saveState();
+          renderAll();
+        } else if (btn.dataset.action === 'edit-staff') {
+          const s = state.staff.find((x) => x.id === id);
+          if (s) openStaffModal(s);
+        } else if (btn.dataset.action === 'del-staff') {
+          state.staff = state.staff.filter((s) => s.id !== id);
+          saveState();
+          renderAll();
+          showToast('Staff member deleted.');
+        }
+      };
+
+      document.getElementById('att-daily-list').addEventListener('click', handleStaffAction);
+      document.getElementById('att-summary-body').addEventListener('click', handleStaffAction);
+
+      document.getElementById('btn-open-add-staff').addEventListener('click', () => openStaffModal(null));
+      document.getElementById('btn-close-staff').addEventListener('click', () => staffModal.classList.add('hidden'));
+      document.getElementById('btn-cancel-staff').addEventListener('click', () => staffModal.classList.add('hidden'));
+      document.getElementById('form-staff').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const editId = document.getElementById('staff-edit-id').value;
+        const name = document.getElementById('staff-name').value.trim();
+        const role = document.getElementById('staff-role').value.trim();
+        const rate = Number(document.getElementById('staff-rate').value || 0);
+        if (editId) {
+          const existing = state.staff.find((s) => s.id === editId);
+          if (existing) {
+            existing.name = name;
+            existing.role = role;
+            existing.rate = rate;
+          }
+          showToast('Staff details updated!');
+        } else {
+          state.staff.push({ id: 'st_' + Date.now(), name, role, rate });
+          showToast('Staff member add ho gaya!');
+        }
+        saveState();
+        e.target.reset();
+        staffModal.classList.add('hidden');
+        renderAll();
+      });
+
+      // Udhaar Handlers
+      const updateUdLiveDue = () => {
+        const amt = Number(document.getElementById('ud-amount').value || 0);
+        const months = Number(document.getElementById('ud-months').value || 0);
+        const pct = Number(document.getElementById('ud-pct').value || 0);
+        const due = calcUdhaarMonthlyDue({ amount: amt, paid: 0, months, pct });
+        document.getElementById('ud-live-due').textContent = formatINR(due);
+      };
+      document.getElementById('ud-amount').addEventListener('input', updateUdLiveDue);
+      document.getElementById('ud-months').addEventListener('input', updateUdLiveDue);
+      document.getElementById('ud-pct').addEventListener('input', updateUdLiveDue);
+
+      document.getElementById('form-udhaar').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const type = document.getElementById('ud-type').value;
+        const party = document.getElementById('ud-party').value.trim();
+        const amount = Number(document.getElementById('ud-amount').value || 0);
+        const months = Number(document.getElementById('ud-months').value || 0);
+        const pct = Number(document.getElementById('ud-pct').value || 0);
+        const date = document.getElementById('ud-date').value || todayISO();
+
+        state.udhaar.unshift({ id: 'ud_' + Date.now(), type, party, amount, paid: 0, months, pct, date });
+        saveState();
+        e.target.reset();
+        document.getElementById('ud-pct').value = 0;
+        document.getElementById('ud-date').value = todayISO();
+        updateUdLiveDue();
+        renderAll();
+        showToast(type === 'taken' ? 'Loan add ho gaya & Business Cash mein jud gaya!' : 'Udhaar entry save ho gayi!');
+      });
+
+      document.getElementById('ud-filter').addEventListener('change', renderUdhaar);
+      document.getElementById('ud-search-name').addEventListener('input', renderUdhaar);
+      document.getElementById('ud-name-pills').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-ud-name]');
+        if (!btn) return;
+        const inp = document.getElementById('ud-search-name');
+        const val = btn.dataset.udName;
+        inp.value = inp.value.toLowerCase() === val.toLowerCase() ? '' : val;
+        renderUdhaar();
+      });
+
+      const udPayModal = document.getElementById('modal-udhaar-pay');
+      document.getElementById('ud-table-body').addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.dataset.action === 'del-ud') {
+          state.udhaar = state.udhaar.filter((u) => u.id !== id);
+          saveState();
+          renderAll();
+          showToast('Udhaar entry delete ho gayi.');
+        } else if (btn.dataset.action === 'pay-ud') {
+          const item = state.udhaar.find((u) => u.id === id);
+          if (!item) return;
+          document.getElementById('ud-pay-id').value = id;
+          document.getElementById('ud-pay-title').textContent = 'Payment: ' + item.party;
+          document.getElementById('ud-pay-amt').value = '';
+          udPayModal.classList.remove('hidden');
+        }
+      });
+
+      document.getElementById('btn-close-ud-pay').addEventListener('click', () => udPayModal.classList.add('hidden'));
+      document.getElementById('btn-cancel-ud-pay').addEventListener('click', () => udPayModal.classList.add('hidden'));
+      document.getElementById('form-udhaar-pay').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('ud-pay-id').value;
+        const amt = Number(document.getElementById('ud-pay-amt').value || 0);
+        const item = state.udhaar.find((u) => u.id === id);
+        if (item && amt > 0) {
+          item.paid = Number(item.paid || 0) + amt;
+          saveState();
+          renderAll();
+          showToast('Payment update ho gayi!');
+        }
+        udPayModal.classList.add('hidden');
+      });
+
+      // Directory: My Address + Clients + Shopkeepers
+      const myAddrModal = document.getElementById('modal-my-address');
+      document.getElementById('btn-edit-my-address').addEventListener('click', () => {
+        document.getElementById('my-addr-name').value = state.myBusiness.name;
+        document.getElementById('my-addr-line').value = state.myBusiness.address;
+        document.getElementById('my-addr-contact').value = state.myBusiness.contact;
+        document.getElementById('my-addr-map').value = state.myBusiness.mapUrl || '';
+        myAddrModal.classList.remove('hidden');
+      });
+      document.getElementById('btn-close-my-addr').addEventListener('click', () => myAddrModal.classList.add('hidden'));
+      document.getElementById('btn-cancel-my-addr').addEventListener('click', () => myAddrModal.classList.add('hidden'));
+      document.getElementById('form-my-address').addEventListener('submit', (e) => {
+        e.preventDefault();
+        state.myBusiness = {
+          name: document.getElementById('my-addr-name').value.trim(),
+          address: document.getElementById('my-addr-line').value.trim(),
+          contact: document.getElementById('my-addr-contact').value.trim(),
+          mapUrl: document.getElementById('my-addr-map').value.trim()
+        };
+        saveState();
+        myAddrModal.classList.add('hidden');
+        renderDirectory();
+        showToast('Address update ho gaya!');
+      });
+
+      const contactModal = document.getElementById('modal-contact');
+      const setContactPhotoPreview = (dataUrl) => {
+        pendingContactPhoto = dataUrl || '';
+        const prev = document.getElementById('contact-photo-preview');
+        const clr = document.getElementById('contact-photo-clear');
+        const st = document.getElementById('contact-photo-status');
+        if (pendingContactPhoto) {
+          prev.src = pendingContactPhoto;
+          prev.classList.remove('hidden');
+          clr.classList.remove('hidden');
+          st.textContent = 'Photo attached';
+        } else {
+          prev.src = '';
+          prev.classList.add('hidden');
+          clr.classList.add('hidden');
+          st.textContent = 'Photo / Visiting Card (Optional)';
+          document.getElementById('contact-photo').value = '';
+        }
+      };
+
+      document.getElementById('contact-photo').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        compressImage(file, setContactPhotoPreview);
+      });
+      document.getElementById('contact-photo-clear').addEventListener('click', () => setContactPhotoPreview(''));
+
+      const openContactModal = (type, existing) => {
+        document.getElementById('contact-type').value = type;
+        if (existing) {
+          document.getElementById('modal-contact-title').textContent = type === 'client' ? 'Edit Client' : 'Edit Shopkeeper';
+          document.getElementById('contact-edit-id').value = existing.id;
+          document.getElementById('contact-name').value = existing.name;
+          document.getElementById('contact-phone').value = existing.phone || '';
+          document.getElementById('contact-address').value = existing.address || '';
+          document.getElementById('contact-map').value = existing.mapUrl || '';
+          document.getElementById('contact-notes').value = existing.notes || '';
+          setContactPhotoPreview(existing.photo || '');
+        } else {
+          document.getElementById('modal-contact-title').textContent = type === 'client' ? 'Add Client (Sofa Buyer)' : 'Add Shopkeeper (Supplier)';
+          document.getElementById('contact-edit-id').value = '';
+          document.getElementById('form-contact').reset();
+          document.getElementById('contact-type').value = type;
+          setContactPhotoPreview('');
+        }
+        contactModal.classList.remove('hidden');
+      };
+
+      document.querySelectorAll('.btn-add-contact').forEach((btn) => {
+        btn.addEventListener('click', () => openContactModal(btn.dataset.openContact, null));
+      });
+      document.getElementById('btn-close-contact').addEventListener('click', () => contactModal.classList.add('hidden'));
+      document.getElementById('btn-cancel-contact').addEventListener('click', () => contactModal.classList.add('hidden'));
+
+      document.getElementById('form-contact').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const editId = document.getElementById('contact-edit-id').value;
+        const type = document.getElementById('contact-type').value;
+        const name = document.getElementById('contact-name').value.trim();
+        const phone = document.getElementById('contact-phone').value.trim();
+        const address = document.getElementById('contact-address').value.trim();
+        const mapUrl = document.getElementById('contact-map').value.trim();
+        const notes = document.getElementById('contact-notes').value.trim();
+
+        if (editId) {
+          const item = state.contacts.find((c) => c.id === editId);
+          if (item) {
+            item.name = name; item.phone = phone; item.address = address; item.mapUrl = mapUrl; item.notes = notes; item.photo = pendingContactPhoto;
+          }
+          showToast('Contact update ho gaya!');
+        } else {
+          state.contacts.unshift({ id: 'ct_' + Date.now(), type, name, phone, address, mapUrl, notes, photo: pendingContactPhoto });
+          showToast('Contact add ho gaya!');
+        }
+        saveState();
+        contactModal.classList.add('hidden');
+        renderAll();
+      });
+
+      const handleContactListClick = (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const id = btn.dataset.id;
+        if (btn.dataset.action === 'del-contact') {
+          state.contacts = state.contacts.filter((c) => c.id !== id);
+          saveState();
+          renderAll();
+          showToast('Contact delete ho gaya.');
+        } else if (btn.dataset.action === 'edit-contact') {
+          const c = state.contacts.find((x) => x.id === id);
+          if (c) openContactModal(c.type, c);
+        } else if (btn.dataset.action === 'view-contact-photo') {
+          const c = state.contacts.find((x) => x.id === id);
+          if (c && c.photo) {
+            document.getElementById('modal-photo-title').textContent = c.name;
+            document.getElementById('modal-photo-img').src = c.photo;
+            document.getElementById('modal-photo').classList.remove('hidden');
+          }
+        }
+      };
+      document.getElementById('list-clients').addEventListener('click', handleContactListClick);
+      document.getElementById('list-shopkeepers').addEventListener('click', handleContactListClick);
+      document.getElementById('search-clients').addEventListener('input', renderDirectory);
+      document.getElementById('search-shopkeepers').addEventListener('input', renderDirectory);
+
+      // Photo Modal
+      document.getElementById('btn-close-photo').addEventListener('click', () => {
+        document.getElementById('modal-photo').classList.add('hidden');
+      });
+
+      // Clear Data Modal
+      const confirmModal = document.getElementById('modal-confirm');
+      document.getElementById('btn-reset-demo').addEventListener('click', () => confirmModal.classList.remove('hidden'));
+      document.getElementById('btn-cancel-clear').addEventListener('click', () => confirmModal.classList.add('hidden'));
+      document.getElementById('btn-confirm-clear').addEventListener('click', () => {
+        state.openingCash = 0;
+        state.monthlyRent = 0;
+        state.sofas = [];
+        state.hardware = [];
+        state.expenses = [];
+        state.attendance = {};
+        state.udhaar = [];
+        saveState();
+        confirmModal.classList.add('hidden');
+        renderAll();
+        showToast('Saare records clear kar diye gaye.');
+      });
+
+      // Export CSV
+      document.getElementById('btn-export-csv').addEventListener('click', () => {
+        const rows = [['Type', 'Date', 'Title / Item', 'Category / Details', 'Amount (INR)', 'Notes']];
+        state.sofas.forEach((sf) => {
+          const sp = calcSofaSplit(sf.sell, sf.cost, sf.bizPct, sf.udhaarPct);
+          rows.push(['Sofa', sf.date, sf.name, `Cost ${sf.cost} | Profit ${sp.profit}`, sf.sell, `Biz ${sp.bizAmt} | Udhaar ${sp.udhaarAmt} | Each ${sp.eachPartner}`]);
+        });
+        state.hardware.forEach((x) => {
+          rows.push(['Hardware', x.date, x.item, x.qty + ' ' + x.unit + ' @ ' + x.rate, x.qty * x.rate, x.supplier || '']);
+        });
+        state.expenses.forEach((x) => {
+          rows.push(['Expense', x.date, x.desc, x.category, x.amount, x.mode]);
+        });
+        state.udhaar.forEach((u) => {
+          rows.push(['Udhaar', u.date || '', u.party, u.type, u.amount, `Paid ${u.paid || 0} | ${u.months || 0}m | ${u.pct}%/mo`]);
+        });
+        const csv = rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'JMR_Workshop_' + todayISO() + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('CSV download ho gayi!');
+      });
+
+      switchTab(currentTab);
+    })();
+  </script>
+</body>
+</html>
